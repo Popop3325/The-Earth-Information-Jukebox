@@ -78,7 +78,14 @@ export class ScorePlayer {
     return l ? gainAt(l.points, t) : 0;
   }
 
+  /** true, якщо звук зараз іде (для UI: чи перезапускати після зміни пресету) */
+  get playing() {
+    return !!this.timer && !this.paused && !this.disposed;
+  }
+
   start() {
+    if (this.disposed) return; // знищений плеєр не можна запустити знову
+    clearTimeout(this.stopTimer);
     this.layers.forEach((l) => l.player.state !== "started" && l.player.start());
     this.paused = false;
     this.lastT = null;
@@ -87,12 +94,14 @@ export class ScorePlayer {
   }
 
   pause() {
+    if (this.disposed) return;
     this.paused = true;
     this.layers.forEach((l) => l.node.gain.rampTo(0, 0.2));
     Object.values(this.instruments).forEach((i) => i.releaseAll?.());
   }
 
   resume() {
+    if (this.disposed) return;
     if (!this.timer) return this.start();
     this.paused = false;
     this.lastT = null;
@@ -102,11 +111,13 @@ export class ScorePlayer {
     clearInterval(this.timer);
     this.timer = null;
     this.pause();
-    setTimeout(() => this.layers.forEach((l) => l.player.stop()), 300);
+    this.stopTimer = setTimeout(() => this.layers.forEach((l) => l.player.stop()), 300);
   }
 
   dispose() {
+    if (this.disposed) return;
     this.stop();
+    this.disposed = true;
     setTimeout(() => {
       this.layers.forEach((l) => { l.player.dispose(); l.node.dispose(); });
       Object.values(this.instruments).forEach((i) => i.dispose());
@@ -115,7 +126,7 @@ export class ScorePlayer {
   }
 
   tick() {
-    if (this.paused) return;
+    if (this.paused || this.disposed) return;
     const t = this.getTime();
     for (const l of this.layers) l.node.gain.rampTo(gainAt(l.points, t), 0.1);
 

@@ -2,23 +2,20 @@
 
 Проєкт для [NASA Space Apps Challenge 2026: The Earth Information Jukebox](https://www.spaceappschallenge.org/2026/challenges/the-earth-information-jukebox/).
 
-Вебзастосунок, що перетворює супутникові візуалізації NASA на звук (сонифікацію), плюс гра, в якій зміни Землі треба **почути**.
+**Чуємо, як дихає рослинність Північної Америки.** Беремо візуалізацію NASA [Near Real-Time NDVI (SVS 5544)](https://svs.gsfc.nasa.gov/5544/): 900 днів супутникових даних VIIRS. Кожен кадр переводимо в індекс рослинності, з нього отримуємо датасет, а з датасету звук: весна, літо, осінь і зима звучать по-різному. Плюс гра, у якій зміни треба **почути**.
+
+Поки працюємо з **одним відео й одним материком**. Інші материки — це той самий код з іншим `crop`.
 
 ## Як це працює
 
 ```
-відео → pipeline/ (Python, OpenCV, ML) → фічі → sonify/ (Python) → партитура (score)
-                                                                        │
-                                       backend/ (FastAPI) ──────────────┘
+NDVI-відео (SVS 5544) → pipeline/ (колір → NDVI, маски, зони) → датасет → sonify/ → партитура (score)
+                                                                                     │
+                                        backend/ (FastAPI) ──────────────────────────┘
                                                 │
                        frontend/ (джукбокс) і frontend/game/ (гра)
                        └── frontend/player.js програє партитуру (Tone.js)
 ```
-
-1. **pipeline/** аналізує кадри (`sample_fps` на секунду) і рахує фічі: яскравість, рух, частки лісу, міста, води…
-2. **sonify/** за пресетом перетворює фічі на партитуру: шари семплів (птахи, вітер) з кривою гучності і нотні події.
-3. **backend/** віддає каталог, партитури (`/api/score/<id>`) і квіз для гри (`/api/quiz/<id>`).
-4. **frontend/** програє партитуру синхронно з відео. Браузер нічого не вирішує, уся логіка на Python.
 
 Деталі: [docs/architecture.md](docs/architecture.md). Формати: [features.schema.json](shared/schema/features.schema.json), [score.schema.json](shared/schema/score.schema.json).
 
@@ -26,10 +23,10 @@
 
 | Папка | Що там | Хто |
 |---|---|---|
-| `pipeline/` | кадри, фічі, land cover, ML | №1 |
+| `pipeline/` | кадри, NDVI за колірною шкалою, фічі, ML | №1 |
 | `backend/` | FastAPI | №1 |
-| `sonify/` | алгоритм сонифікації, пресети | №2 |
-| `data/` | каталог відео, описи; самі відео не в git | №3 |
+| `sonify/` | алгоритм сонифікації, пресет `vegetation` | №2 |
+| `data/` | каталог, дати кадрів, шкала NDVI; саме відео не в git | №3 |
 | `frontend/` | джукбокс, `player.js`, звуки | №4 |
 | `frontend/game/` | гра + оригінальний прототип | №5 |
 | `shared/` | схеми даних | усі |
@@ -41,26 +38,25 @@
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt
 ```
 
-Порахувати фічі (відео має лежати в `data/raw/<id>.mp4`, див. [data/README.md](data/README.md)):
+Скачати відео NASA (58 МБ; краще взяти копію в капітана, бо NASA оновлює файл на сайті):
 
 ```bash
-python -m pipeline.run cancun_landcover
+curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4
 ```
 
-Подивитися партитуру (необов'язково, сервер генерує її сам):
+Порахувати датасет (~6 с):
 
 ```bash
-python -m sonify.run cancun_landcover
+.venv/bin/python -m pipeline.run ndvi_north_america
 ```
 
 Запустити сервер:
 
 ```bash
-uvicorn backend.main:app --reload
+.venv/bin/uvicorn backend.main:app --reload --reload-exclude '.venv/*'
 ```
 
 - Джукбокс: http://127.0.0.1:8000

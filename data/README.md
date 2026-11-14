@@ -1,31 +1,38 @@
 # Дані
 
-- `catalog.json`: список відео і налаштування обробки. **Комітимо.**
-- `descriptions.json`: тексти для кожного відео (`short`, `science`, `audio_description`, `how_it_sounds`). **Комітимо.** Заповнює №3.
-- `raw/`: завантажені відео (`<id>.mp4` або `<id>.webm`). **Не комітимо.**
-- `features/`: результат `pipeline.run` (`<id>.json`). **Не комітимо**, бо кожен генерує локально.
+- `catalog.json`: відео/регіони і налаштування обробки. **Комітимо.**
+- `sources/`: шкала NDVI (`ndvi_colorbar.png`) і дати кадрів (`ndvi_dates.txt`, рядок *i* = дата кадру *i*). **Комітимо.**
+- `descriptions.json`: тексти для кожного відео (`short`, `science`, `audio_description`, `how_it_sounds`). **Комітимо.**
+- `raw/`: відео (`ndvi_global.mp4`). **Не комітимо.**
+- `features/`: датасет від `pipeline.run`. **Не комітимо**, кожен генерує сам (~6 с).
 - `scores/`, `audio/`: результати `sonify.run` і рендеру. **Не комітимо.**
+
+## Відео
+
+NASA SVS 5544, Near Real-Time NDVI, equirectangular, без підпису дати:
+
+```bash
+curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4
+```
+
+⚠ Сторінка **оновлюється**: NASA дописує нові дні, і тоді кадрів більше, ніж дат у `sources/ndvi_dates.txt`. Щоб усі мали однакові дані, беріть копію файлу в капітана.
+
+Перевірено для нашої версії: 4096×2048, 30 fps, 930 кадрів. Кадри 0–899 відповідають датам 27.12.2023–13.06.2026, далі стоп-кадр (pipeline його відкидає).
 
 ## Поля `catalog.json`
 
 | Поле | Що це | Приклад |
 |---|---|---|
-| `id` | ідентифікатор = ім'я файлу в `raw/` | `"night_lights"` |
-| `title`, `svs_page`, `source` | назва та джерело | |
-| `video_url` | пряме посилання на MP4, щоб інші скачали те саме | |
-| `extractors` | які фічі рахувати: `basic`, `landcover` | `["basic", "landcover"]` |
-| `crop` | `[x, y, w, h]`: прямокутник із даними, у пікселях **оригінального** відео | `[232, 0, 2068, 1170]` |
-| `exclude` | `[[x, y, w, h], ...]`: зони, які не рахуємо (дата, логотип, підпис) | |
-| `keyframes` | `[{label, t}]`: ключові моменти (роки) і секунда у відео | `{"label": "1987", "t": 0.05}` |
-| `preset` | пресет звуку з `sonify/presets.json` | `"ocean"` |
-| `sample_fps` | скільки кадрів на секунду аналізувати (за замовчуванням 5) | `10` для коротких таймлапсів |
-| `quiz` | налаштування гри: `subject`, `metric`, `grows_with_metric` | `{"subject": "birds", "metric": "built", "grows_with_metric": false}` |
+| `id` | ідентифікатор регіону | `"ndvi_north_america"` |
+| `raw_file` | файл у `raw/` (один на всі регіони) | `"ndvi_global.mp4"` |
+| `extractors` | які фічі рахувати: `ndvi`, `basic` | `["ndvi"]` |
+| `crop` | `[x, y, w, h]`: регіон у пікселях **оригіналу** | `[137, 205, 1320, 660]` |
+| `geo` | довгота/широта меж `crop` (для зон і фронту весни) | `{"lon": [-168, -52], "lat": [72, 14]}` |
+| `exclude` | `[[x, y, w, h], ...]`: зони, які не рахуємо | Гренландія |
+| `timeline` | файл з датами кадрів | `{"dates_file": "data/sources/ndvi_dates.txt"}` |
+| `keyframes` | `"quarterly"` / `"monthly"` або список `[{label, t}]` | `"quarterly"` |
+| `preset` | пресет звуку з `sonify/presets.json` | `"vegetation"` |
+| `sample_fps` | скільки кадрів на секунду аналізувати | `10` (= кожні 3 дні) |
+| `quiz` | гра: `subject`, `metric`, `grows_with_metric`, `min_diff` | |
 
-## Як отримати відео
-
-1. Відкрийте сторінку `svs_page` з `catalog.json` (джерело: [EIC gallery](https://svs.gsfc.nasa.gov/gallery/earth-information-center/)).
-2. У блоці **Download** оберіть MP4 з роздільністю 1080p або нижче. 4K не потрібне.
-3. Посилання вже є в `video_url` (див. також `video_note`). Збережіть файл як `data/raw/<id>.mp4` або `<id>.webm` (розширення як в оригіналу).
-4. Порахуйте фічі: `.venv/bin/python -m pipeline.run <id>`
-
-Відео `cancun_landcover.mp4` (з прототипу гри) візьміть у капітана команди.
+**Як порахувати `crop` для іншого материка:** проекція рівнопроміжна, тому `x = (lon + 180) / 360 × 4096`, `y = (90 − lat) / 180 × 2048`.

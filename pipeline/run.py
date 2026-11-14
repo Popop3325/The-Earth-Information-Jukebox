@@ -3,8 +3,8 @@
 Налаштування (crop, exclude, extractors, keyframes) беруться з data/catalog.json.
 
 Приклади:
-    python -m pipeline.run cancun_landcover
-    python -m pipeline.run night_lights --video ~/Downloads/lights.mp4 --sample-fps 4
+    python -m pipeline.run ndvi_north_america
+    python -m pipeline.run ndvi_north_america --sample-fps 5   # рідше, швидше
 """
 from __future__ import annotations
 

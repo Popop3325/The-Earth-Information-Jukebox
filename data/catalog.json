@@ -1,5 +1,5 @@
 {
-  "_comment": "Каталог відео. Поля: id, title, svs_page (джерело), video_url (пряме посилання на MP4), extractors (basic | landcover), crop [x,y,w,h] і exclude [[x,y,w,h],...] у пікселях оригіналу, keyframes [{label, t}], preset (з sonify/presets.json). Детальніше: data/README.md",
+  "_comment": "Каталог відео. Поки працюємо з ОДНИМ відео: NDVI Північної Америки (SVS 5544). Інший материк = новий запис з тим самим raw_file та іншими crop/geo/exclude. Опис полів: data/README.md",
   "videos": [
     {
       "id": "ndvi_north_america",
@@ -9,45 +9,45 @@
       "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
       "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
       "raw_file": "ndvi_global.mp4",
-      "extractors": ["ndvi"],
-      "geo": { "lon": [-168, -52], "lat": [72, 14] },
-      "crop": [137, 205, 1320, 660],
-      "exclude": [[1195, 205, 262, 160]],
-      "timeline": { "dates_file": "data/sources/ndvi_dates.txt" },
+      "extractors": [
+        "ndvi"
+      ],
+      "geo": {
+        "lon": [
+          -168,
+          -52
+        ],
+        "lat": [
+          72,
+          14
+        ]
+      },
+      "crop": [
+        137,
+        205,
+        1320,
+        660
+      ],
+      "exclude": [
+        [
+          1195,
+          205,
+          262,
+          160
+        ]
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
       "keyframes": "quarterly",
       "preset": "vegetation",
       "sample_fps": 10,
-      "quiz": { "subject": "vegetation", "metric": "ndvi_mean", "grows_with_metric": true }
-    },
-    {
-      "id": "cancun_landcover",
-      "title": "Cancun, Mexico: forest vs city, 1987–2018",
-      "source": "Landsat time-lapse (запис екрана Google Earth Timelapse). TODO: знайти еквівалент на NASA SVS/EIC або вказати точне джерело",
-      "svs_page": null,
-      "video_url": null,
-      "extractors": ["basic", "landcover"],
-      "crop": [232, 0, 2068, 1170],
-      "exclude": [[2040, 60, 290, 150], [260, 1030, 360, 110]],
-      "keyframes": [
-        { "label": "1987", "t": 0.05 },
-        { "label": "1993", "t": 0.75 },
-        { "label": "1999", "t": 1.47 },
-        { "label": "2004", "t": 1.95 },
-        { "label": "2010", "t": 2.67 },
-        { "label": "2018", "t": 3.65 }
-      ],
-      "preset": "forest_city",
-      "sample_fps": 10,
-      "quiz": { "subject": "birds", "metric": "built", "grows_with_metric": false }
-    },
-    { "id": "night_lights", "video_note": "32 МБ, кодек H.265: OpenCV читає, але Chrome може не відтворити — для сайту перекодувати в H.264", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005300/a005313/nightlights_flat_series_and_change_wZooms_13_EIC_2160p30_h265.mp4", "preset": "lights" },
-    { "id": "sea_surface_currents", "video_note": "8 МБ", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a003900/a003912/pacificcurrents_1080p30.webm", "preset": "ocean" },
-    { "id": "geos_aerosols", "video_note": "на сторінці SVS немає MP4, лише PNG-кадри", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null },
-    { "id": "air_quality", "video_note": "178 МБ, 3840x1080 (усі варіанти великі)", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005533/EIC_AirQuality_Preview_3840x1080.mp4" },
-    { "id": "perpetual_ocean_2", "video_note": "115 МБ (інші версії 1–5 ГБ)", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005400/a005425/perpetual_ocean2_CLOSE_095_beauty_600m_and_below_1080p30.mp4", "preset": "ocean" },
-    { "id": "dyamond_co2", "video_note": "24 МБ", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005196/dyamondPointCloud_12-4-2023b_dyamond_co2_anim_globe_tilt_1080p30.mp4" },
-    { "id": "iss_lightning", "video_note": "127 МБ (найменший варіант)", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005011/iss_lightning_sphere_07312023.mp4", "preset": "lightning" },
-    { "id": "atmospheric_river", "video_note": "69 МБ", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004900/a004960/atmos_river_HD.webm" },
-    { "id": "gedi_forest_height", "video_note": "є колірна шкала → можна перевести колір у висоту лісу", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004900/a004950/GEDI_CA_w_colorbar_1080p60.webm", "extractors": ["basic", "landcover"] }
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.05
+      }
+    }
   ]
 }

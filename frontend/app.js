@@ -18,16 +18,24 @@ async function getJSON(url) {
 const hasVideo = () => !!video.getAttribute("src");
 const nowT = (score) => (hasVideo() ? video.currentTime : (Tone.now() - clockStart) % score.duration_s);
 
+let loadToken = 0;
+
 async function loadScore() {
+  const token = ++loadToken;
+  const wasPlaying = player?.playing;
   player?.dispose();
+  player = null; // поки новий не завантажився, кнопки нічого не запускають
   const preset = presetSel.value ? `?preset=${presetSel.value}` : "";
   const score = await getJSON(`/api/score/${current.id}${preset}`);
-  player = new ScorePlayer(score, { getTime: () => nowT(score), getRate: () => (hasVideo() ? video.playbackRate : 1) });
-  player.onTick = (t) => {
-    const layers = player.layers.map((l) => `${l.id} ${(player.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
+  const p = new ScorePlayer(score, { getTime: () => nowT(score), getRate: () => (hasVideo() ? video.playbackRate : 1) });
+  p.onTick = (t) => {
+    const layers = p.layers.map((l) => `${l.id} ${(p.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
     statusEl.textContent = `t=${t.toFixed(1)}s · ${score.preset}${layers ? " · " + layers : ""}`;
   };
-  await player.load();
+  await p.load();
+  if (token !== loadToken) return p.dispose(); // за цей час користувач обрав інше
+  player = p;
+  if (wasPlaying) player.start(); // зміна пресету під час гри не зупиняє звук
   $("video-note").textContent =
     (score.is_sample ? "⚠ Фічі ще не пораховано, звучать демо-дані. " : "") +
     (hasVideo() ? "" : "Відео не знайдено: звук іде за таймером. ");

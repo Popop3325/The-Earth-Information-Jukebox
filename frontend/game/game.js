@@ -3,13 +3,15 @@
 // Звук: спільний ScorePlayer з ../player.js.
 import { ScorePlayer } from "../player.js";
 
-const VIDEO_ID = new URLSearchParams(location.search).get("video") || "cancun_landcover";
+const VIDEO_ID = new URLSearchParams(location.search).get("video") || "ndvi_north_america";
 const SEGMENT_SECONDS = 6; // скільки реальних секунд звучить відрізок між двома роками
+
+const SUBJECT = { vegetation: "зелені", birds: "птахів" };
 
 // Тексти. Подача англійською → додайте "en" і перемикач мови.
 const T = {
-  more: (s) => `У якому році БІЛЬШЕ ${s === "birds" ? "птахів" : s}?`,
-  less: (s) => `У якому році МЕНШЕ ${s === "birds" ? "птахів" : s}?`,
+  more: (s) => `Коли БІЛЬШЕ ${SUBJECT[s] || s}?`,
+  less: (s) => `Коли МЕНШЕ ${SUBJECT[s] || s}?`,
   listen: "🔊 Слухати",
   correct: "Правильно! Слухаємо, як змінювався звук.",
   wrong: "Ні. Послухайте ще раз баланс звуків.",
