@@ -85,7 +85,7 @@ function makeSynthLayer(spec, node, master, track, beatSec) {
     noise.chain(filter, breath, gust, node);
     const depth = spec.breath_depth ?? 0.2;
     const breathLfo = keep(new Tone.LFO({ frequency: 1 / period, min: 1 - depth, max: 1 + depth }).connect(breath.gain));
-    const gustLfo = keep(new Tone.LFO({ frequency: 2 / period, min: 0.5, max: 1.5, amplitude: 0 }).connect(gust.gain));
+    const gustLfo = keep(new Tone.LFO({ frequency: 2 / period, min: 0.7, max: 1.3, amplitude: 0 }).connect(gust.gain));
     // Свист: дуже вузька смуга білого шуму, що повільно «пливе» по висоті
     const wNoise = keep(new Tone.Noise({ type: "white", volume: -6 }));
     const wFilter = keep(new Tone.Filter({ type: "bandpass", frequency: 2200, Q: 30 }));
@@ -133,6 +133,7 @@ export class ScorePlayer {
     this.paused = false;
     this.onTick = null; // (t, player) => {} — для UI
     this.nodes = [];    // усе, що треба dispose()
+    this.muted = new Set(); // id шарів і голосів (voice), які вимкнув користувач
 
     this.master = new Tone.Volume(-4);
     this.reverb = new Tone.Reverb({ decay: 3, wet: 0.25 });
@@ -153,6 +154,11 @@ export class ScorePlayer {
 
   load() {
     return Tone.loaded();
+  }
+
+  /** Вимкнути/увімкнути шари й голоси за id (напр. ["air"], ["bells"], ["pad", "drone_D", "drone_F"]) */
+  setMuted(ids, muted) {
+    for (const id of ids) muted ? this.muted.add(id) : this.muted.delete(id);
   }
 
   /** Поточна гучність шару в момент t (0..1) — для візуалізації */
@@ -266,8 +272,10 @@ export class ScorePlayer {
     if (this.paused || this.disposed) return;
     const t = this.getTime();
     for (const l of this.layers) {
-      l.node.gain.rampTo(curveAt(l.points, t), 0.1);
-      l.synth?.setParams(l.params, t);
+      const off = this.muted.has(l.id);
+      l.node.gain.rampTo(off ? 0 : curveAt(l.points, t), 0.1);
+      if (off) l.synth?.mute();
+      else l.synth?.setParams(l.params, t);
     }
 
     const events = this.score.events;
@@ -279,6 +287,7 @@ export class ScorePlayer {
     const rate = Math.max(this.getRate() || 1, 0.05);
     while (this.nextEvent < events.length && events[this.nextEvent].t <= t) {
       const e = events[this.nextEvent++];
+      if (this.muted.has(e.voice)) continue;
       const dur = e.dur / rate; // тривалість у секундах відео → реальні секунди
       switch (e.instrument) {
         case "tuned_bell": this.tunedBell(e); break;        // ring — уже в реальних секундах

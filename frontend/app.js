@@ -1,5 +1,6 @@
 // Джукбокс: список відео → відео + звук з партитури. Звук: player.js
 import { ScorePlayer } from "./player.js";
+import { setupExplain } from "./explain.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -8,6 +9,7 @@ const presetSel = $("preset");
 let current = null; // { video meta }
 let player = null;
 let clockStart = 0; // якщо відео немає — звук іде за власним таймером
+const mutedGroups = new Set(); // вимкнені користувачем шари (зберігаються при зміні пресету)
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -26,7 +28,10 @@ async function loadScore() {
   player?.dispose();
   player = null; // поки новий не завантажився, кнопки нічого не запускають
   const preset = presetSel.value ? `?preset=${presetSel.value}` : "";
-  const score = await getJSON(`/api/score/${current.id}${preset}`);
+  const [score, features] = await Promise.all([
+    getJSON(`/api/score/${current.id}${preset}`),
+    getJSON(`/api/features/${current.id}`),
+  ]);
   const p = new ScorePlayer(score, { getTime: () => nowT(score), getRate: () => (hasVideo() ? video.playbackRate : 1) });
   const tl = score.timeline;
   const dateAt = (t) => {
@@ -35,7 +40,9 @@ async function loadScore() {
     d.setDate(d.getDate() + Math.round(t * tl.days_per_second));
     return d.toISOString().slice(0, 10) + " · ";
   };
+  const explain = setupExplain(score, features, mutedGroups, (ids, m) => p.setMuted(ids, m));
   p.onTick = (t) => {
+    explain?.(t);
     const layers = p.layers.map((l) => `${l.id} ${(p.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
     statusEl.textContent = `${dateAt(t)}t=${t.toFixed(1)}s · ${score.preset}${layers ? " · " + layers : ""}`;
   };

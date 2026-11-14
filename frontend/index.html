@@ -30,6 +30,16 @@
       </div>
       <!-- Технічний статус (оновлюється часто, тому НЕ aria-live, щоб не заважати скрінрідеру) -->
       <p id="status" class="status"></p>
+
+      <!-- Пояснення: які дані зараз і у що вони перетворюються. Оновлюється під час гри. -->
+      <section id="explain" class="explain" hidden aria-labelledby="explain-title">
+        <h3 id="explain-title">Що зараз звучить</h3>
+        <p id="explain-date" class="explain-date"></p>
+        <ul id="explain-rows" class="explain-rows"></ul>
+        <fieldset id="mixer" class="mixer">
+          <legend>Шари: вимкніть, щоб почути кожен окремо</legend>
+        </fieldset>
+      </section>
     </section>
   </main>
 
