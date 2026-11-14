@@ -55,4 +55,5 @@ uvicorn backend.main:app --reload
 
 ## Робота в команді
 
-Див. [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md).
+- **Хто що робить, таймлайн і промпти для ШІ:** [docs/TEAM.md](docs/TEAM.md), задачі кожного в [docs/tasks/](docs/tasks/)
+- **Як працювати з git:** [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
