@@ -12,7 +12,7 @@
 // Формат партитури: shared/schema/score.schema.json
 //   layers: { sample, loop_trim? } — зациклений семпл, або { synth: {type: "air", variant} | {type: "drone"} };
 //           gain: [[t, 0..1]], params: { intensity: [[t, 0..1]] } — автоматизація ручок шару.
-//   events: інструменти bell, pluck, pad, drum, tuned_bell, wind_voice, ice, wood.
+//   events: інструменти bell, pluck, pad, drum, tuned_bell, windchime, drip, wind_voice, ice, wood.
 
 import { WIND_VARIANTS } from "./winds.js";
 
@@ -248,6 +248,55 @@ export class ScorePlayer {
     }
   }
 
+  /** Колокольчики «музика вітру»: металеві трубки, нерівногармонічні частки (1, 2.76, 5.40, 8.93), довгий звон.
+   *  bright (0..1): 0 — м'який, теплий (верхні частки тихі), 1 — дзвінкий, світлий. */
+  windChime(e) {
+    const ctx = Tone.getContext().rawContext;
+    const t0 = ctx.currentTime + 0.01;
+    const f0 = Tone.Frequency(e.notes[0]).toFrequency();
+    const bright = e.bright ?? 0.5;
+    const ring = e.ring || 3;
+    const peak = (e.vel ?? 0.5) * 0.12;
+    const partials = [
+      [1, 1, 1], [1.004, 0.5, 0.9],                  // основний тон + легке биття (мерехтіння)
+      [2.76, 0.45 * (0.4 + 0.6 * bright), 0.6],
+      [5.40, 0.22 * bright, 0.35],
+      [8.93, 0.1 * bright, 0.2],
+    ];
+    for (const [ratio, amp, decay] of partials) {
+      if (amp <= 0.001) continue;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.frequency.value = f0 * ratio;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(peak * amp, t0 + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05 + ring * decay);
+      osc.connect(g);
+      Tone.connect(g, this.bellBus);
+      osc.start(t0);
+      osc.stop(t0 + ring + 0.2);
+    }
+  }
+
+  /** Крапля (танення снігу): короткий синус, що ковзає вгору (резонанс бульбашки), швидке згасання. */
+  drip(e) {
+    const ctx = Tone.getContext().rawContext;
+    const t0 = ctx.currentTime + 0.01;
+    const f = Tone.Frequency(e.notes[0]).toFrequency();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(f * 0.7, t0);
+    osc.frequency.exponentialRampToValueAtTime(f * 1.5, t0 + 0.05);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime((e.vel ?? 0.5) * 0.25, t0 + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+    osc.connect(g);
+    Tone.connect(g, this.bellBus);
+    osc.start(t0);
+    osc.stop(t0 + 0.15);
+  }
+
   windVoice(e, dur) {
     const s = this.instruments.wind_voice;
     const x = e.timbre ?? 0;
@@ -286,6 +335,8 @@ export class ScorePlayer {
       const dur = e.dur / rate; // тривалість у секундах відео → реальні секунди
       switch (e.instrument) {
         case "tuned_bell": this.tunedBell(e); break;        // ring — уже в реальних секундах
+        case "windchime": this.windChime(e); break;
+        case "drip": this.drip(e); break;
         case "wind_voice": this.windVoice(e, dur); break;
         case "ice": case "wood": this.instruments[e.instrument].triggerAttackRelease(e.dur, undefined, e.vel); break;
         case "drum": this.instruments.drum.triggerAttackRelease(e.notes[0], dur, undefined, e.vel); break;

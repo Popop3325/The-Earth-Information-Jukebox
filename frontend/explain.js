@@ -7,12 +7,13 @@ const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 /** Групи шарів для вимикачів: назва → id шарів/голосів у партитурі */
 export const GROUPS = [
-  { key: "air", label: "🌬 Повітря", ids: ["air_winter", "air_warm"] },
-  { key: "bells", label: "🔔 Дзвони", ids: ["bells"] },
+  { key: "air", label: "🌬 Вітер (зима/весна/літо/осінь)", ids: ["air_winter", "air_warm", "air_dry"] },
+  { key: "chimes", label: "🎐 Колокольчики (зелень)", ids: ["chimes"] },
+  { key: "birds", label: "🐦 Птахи", ids: ["birds"] },
+  { key: "drips", label: "💧 Капель (танення)", ids: ["drips"] },
+  { key: "wood", label: "🪵 Дерево (осінь)", ids: ["wood"] },
   { key: "wind", label: "🎶 Духовий голос", ids: ["wind"] },
   { key: "bg", label: "🎹 Фон і дрон", ids: ["pad", "drone_D", "drone_F"] },
-  { key: "tex", label: "❄ Лід і 🪵 дерево", ids: ["ice", "wood"] },
-  { key: "birds", label: "🐦 Птахи", ids: ["birds"] },
 ];
 
 function featuresAt(features, t) {
@@ -70,15 +71,15 @@ export function setupExplain(score, features, muted, onMute) {
     if (muted.has(g.key)) onMute(g.ids, true);
   }
 
-  // Рядки пояснення: [ключ групи, іконка, дані (текст, 0..1 для смужки), звук]
-  const rows = [
-    ["air", "❄"], ["tex", "🟫"], ["bells", "🌿"], ["wind", "📈"], ["wind", "↕"], ["bg", "🎵"],
-  ];
+  // Рядки пояснення: [ключ групи, іконка]
+  const rows = [["air", "❄"], ["air", "🍂"], ["chimes", "🌿"], ["drips", "💧"], ["birds", "🐦"], ["bg", "🎵"]];
   const ul = $("explain-rows");
   ul.innerHTML = rows
     .map(([, icon]) => `<li><span aria-hidden="true">${icon}</span><span class="data"></span><span class="sound"></span></li>`)
     .join("");
   const lis = [...ul.children];
+  const nrm = (v, [lo, hi]) => clamp01((v - lo) / (hi - lo));
+  const lagT = (L.melt_lag || 10) / (features.sample_fps || 10);
 
   let lastT = 0;
   function set(i, dataText, level, soundText) {
@@ -92,21 +93,23 @@ export function setupExplain(score, features, muted, onMute) {
     lastT = t;
     const f = featuresAt(features, t);
     $("explain-date").textContent = dateAt(score.timeline, t);
+    const snow = f.white_frac, earth = f.earth_frac, green = f.green_frac, up = f.green_up_rate;
+    const winter = nrm(snow, L.winter_range), spring = nrm(up, L.spring_range), autumn = nrm(up, L.autumn_range);
+    const melt = Math.max(0, featuresAt(features, Math.max(0, t - lagT)).white_frac - snow);
 
-    const snow = f.white_frac, earth = f.earth_frac, green = f.green_frac, ndvi = f.ndvi_mean, up = f.green_up_rate;
-    const winter = Math.min(1, Math.max(0, (snow - 0.1) / 0.3)); // як air.winter_range у пресеті
     set(0, `Сніг ${pct(snow)}`, snow / 0.6,
-      winter > 0.8 ? "хуртовина: вітер виє в щілинах" : winter > 0.2 ? `хуртовина ${pct(winter)} + теплий вітер` : "м'який теплий вітер");
-    set(1, `Гола земля ${pct(earth)}`, earth / 0.35,
-      `вітер ${earth > 0.2 ? "гучніше" : "тихіше"}; ${earth > L.wood_from && green < 0.5 ? "дерев'яні клацання" : "без клацань"}${snow > L.ice_from ? ", хрускіт льоду" : ""}`);
-    const strikes = green < L.bells_min ? "дзвони мовчать (зелені < 20%)" : green < L.bells_double ? "1 удар дзвону на такт" : "2 удари дзвону на такт";
-    set(2, `Зелень ${pct(green)}`, green, strikes + (snow > 0.2 ? ", звук «скляний»" : ", звук теплий"));
-    set(3, `NDVI ${ndvi.toFixed(2)}`, (ndvi - 0.25) / 0.42,
-      ndvi > 0.5 ? "високі ноти, довгі фрази" : ndvi > 0.35 ? "середній регістр" : "низькі ноти, короткі фрази");
-    set(4, up > L.glide_up ? "Зелень росте" : up < L.glide_down ? "Зелень спадає" : "Без змін", Math.abs(up - 0.5) * 2,
-      up > L.glide_up ? "мелодія йде ВГОРУ" : up < L.glide_down ? "мелодія йде ВНИЗ" : "мелодія «аркою»");
+      winter > 0.8 ? "хуртовина: вітер виє в щілинах" : winter > 0.2 ? `хуртовина слабшає (${pct(winter)})` : "хуртовини немає");
+    const season = winter > 0.5 ? "зима" : spring > 0.3 ? "весна: зелень росте" : autumn > 0.3 ? "осінь: зелень спадає" : "літо";
+    const wind = winter > 0.5 ? "вітер — хуртовина" : spring > 0.3 ? "дуже легкий теплий вітер" : autumn > 0.3 ? "сухий вітер + дерев'яні клацання" : "теплий вітер";
+    const bare = nrm(earth, L.bare_range) > 0.5 ? "; багато голої землі → тихіше" : "";
+    set(1, season[0].toUpperCase() + season.slice(1), Math.abs(up - 0.5) * 2, wind + bare);
+    const k = green < L.chimes_min ? 0 : Math.round(L.chimes_per_bar[0] + (L.chimes_per_bar[1] - L.chimes_per_bar[0]) * nrm(green, [L.chimes_min, L.chimes_max]));
+    set(2, `Зелень ${pct(green)}`, green, k ? `${k} колокольчик${k === 1 ? "" : k < 5 ? "и" : "ів"} на такт, ${green > 0.6 ? "високо й дзвінко" : "нижче й тихіше"}` : "колокольчики мовчать (зелені < 20%)");
+    const drips = Math.round(L.drips_per_bar[1] * nrm(melt, L.melt_range));
+    set(3, `Сніг тане: −${pct(melt)} за місяць`, nrm(melt, L.melt_range), drips ? `капель: ${drips} крапель на такт` : "капелі немає");
+    set(4, `Птахи`, (1 - winter) * nrm(green, [0.3, 0.85]), winter > 0.5 ? "мовчать (зима)" : green > 0.6 ? "співають (багато зелені)" : green > 0.35 ? "трохи птахів" : "майже немає");
     const summer = green >= L.season_split;
-    set(5, summer ? "Літо" : "Зима", green, summer ? "фа-мажор, тоніка F (світло)" : "ре-мінор, тоніка D (прохолодно)");
+    set(5, summer ? "Тональність літа" : "Тональність зими", green, summer ? "фа-мажор, тоніка F (світло)" : "ре-мінор, тоніка D (прохолодно)");
   }
 
   let n = 0;

@@ -1,7 +1,7 @@
 {
   "_comment": "Пресети сонифікації. layers — зациклені семпли, гучність яких іде за фічею. voices — нотні події (синтез у браузері). Значення фічі спершу нормалізується з range [lo, hi] у 0..1 (invert: true — перевертає), потім переводиться в gain/degree/velocity. Звуки лежать у frontend/sounds/.",
   "seasons": {
-    "_comment": "Саунд-дизайн команди (docs/sound-design.md). Логіка: sonify/seasons.py. Темп сталий 72 BPM, пентатоніка D F G A C, тоніка D (зима) ↔ F (літо). Відео грає на 0.25× (~2 хв), щоб у сітці було ~36 тактів. Без випадковості: більше зелені → вищі ноти; весна → фрази вгору, осінь → вниз; ритм льоду/дерева рівномірний, щільність = дані.",
+    "_comment": "ЄДИНА озвучка (sonify/seasons.py), зібрана за саунд-дизайном і тестом асоціацій команди. Зима — хуртовина; весна — легкий вітер, трохи птахів, капель; літо — теплий вітер і птахи; осінь — сухий вітер і дерево; зелень — колокольчики; фон — акорд + дрон.",
     "composer": "seasons",
     "tempo_bpm": 72,
     "playback_rate": 0.25,
@@ -9,129 +9,6 @@
       0.3,
       0.7
     ],
-    "pad_gain": 0.25,
-    "drone": {
-      "gain": 0.14,
-      "D": [
-        "D2",
-        "D3",
-        "A3"
-      ],
-      "F": [
-        "F2",
-        "F3",
-        "C4"
-      ]
-    },
-    "air": {
-      "base": 0.2,
-      "earth_gain": 0.5,
-      "earth_range": [
-        0.07,
-        0.35
-      ],
-      "winter_range": [
-        0.1,
-        0.4
-      ],
-      "winter_variant": "howl",
-      "intensity_range": [
-        0.1,
-        0.6
-      ],
-      "warm_sample": "wind_warm.m4a",
-      "warm_gain": 0.9
-    },
-    "bells": {
-      "min_green": 0.2,
-      "double_green": 0.5,
-      "ndvi_range": [
-        0.25,
-        0.65
-      ],
-      "degrees": [
-        5,
-        10
-      ],
-      "ring_steps": [
-        0.4,
-        0.8,
-        1.4,
-        2.2,
-        3.0
-      ],
-      "tierce": [
-        1.2,
-        1.25
-      ],
-      "glass_range": [
-        0.1,
-        0.55
-      ],
-      "vel": [
-        0.35,
-        0.7
-      ]
-    },
-    "wind": {
-      "ndvi_range": [
-        0.25,
-        0.65
-      ],
-      "phrase_every_bars": 2,
-      "phrase_notes": [
-        2,
-        6
-      ],
-      "start_degree": [
-        2,
-        6
-      ],
-      "note_beats": [
-        0.5,
-        2.0
-      ],
-      "glide_up": 0.6,
-      "glide_down": 0.4,
-      "vel": 0.45
-    },
-    "textures": {
-      "ice": {
-        "range": [
-          0.4,
-          0.6
-        ],
-        "hits": [
-          0,
-          4
-        ],
-        "vel": 0.3
-      },
-      "wood": {
-        "range": [
-          0.2,
-          0.35
-        ],
-        "hits": [
-          0,
-          3
-        ],
-        "vel": 0.35,
-        "mute_above_green": 0.5
-      }
-    },
-    "birds": {
-      "sample": "birds.m4a",
-      "feature": "deepgreen_frac",
-      "range": [
-        0.25,
-        0.6
-      ],
-      "gain": [
-        0.0,
-        0.12
-      ]
-    },
     "season_split": 0.5,
     "hysteresis": 0.03,
     "pad_chords": {
@@ -147,166 +24,151 @@
         "G4",
         "A4"
       ]
-    }
-  },
-  "vegetation": {
-    "_comment": "NDVI Північної Америки. Більше зелені → більше птахів; сніг → вітер; весна (green_up_rate > 0.5) → мажор, осінь → мінор; фронт весни на північ → мелодія вгору; вологий сезон Мексики → окремий голос. Діапазони range підібрано за реальними min/max датасету.",
-    "tempo_bpm": 76,
-    "root": "D4",
-    "mode": {
-      "feature": "green_up_rate",
-      "threshold": 0.5,
-      "above": "major",
-      "below": "minor",
-      "hold_beats": 8
     },
-    "layers": [
-      {
-        "id": "birds",
-        "sample": "birds.m4a",
-        "feature": "ndvi_mean",
-        "range": [
-          0.3,
-          0.65
-        ],
-        "gain": [
-          0.0,
-          0.9
-        ]
-      },
-      {
-        "id": "chimes",
-        "sample": "chimes.m4a",
-        "feature": "green_share",
-        "range": [
-          0.15,
-          0.6
-        ],
-        "gain": [
-          0.0,
-          0.45
-        ]
-      },
-      {
-        "id": "wind",
-        "sample": "wind.m4a",
-        "feature": "snow_share",
-        "range": [
-          0.05,
-          0.55
-        ],
-        "gain": [
-          0.1,
-          0.8
-        ]
-      }
-    ],
-    "voices": [
-      {
-        "id": "spring_front",
-        "instrument": "bell",
-        "every_beats": 1,
-        "pitch": {
-          "feature": "green_front_lat",
-          "range": [
-            0.2,
-            0.95
-          ],
-          "degrees": [
-            0,
-            11
-          ]
-        },
-        "velocity": {
-          "feature": "ndvi_mean",
-          "range": [
-            0.25,
-            0.65
-          ],
-          "value": [
-            0.25,
-            0.7
-          ]
-        },
-        "probability": {
-          "feature": "ndvi_mean",
-          "range": [
-            0.25,
-            0.65
-          ],
-          "value": [
-            0.35,
-            0.9
-          ]
-        }
-      },
-      {
-        "id": "east_forest",
-        "instrument": "pad",
-        "every_beats": 4,
-        "chord": true,
-        "pitch": {
-          "feature": "zone_east",
-          "range": [
-            0.3,
-            0.9
-          ],
-          "degrees": [
-            -7,
-            -3
-          ]
-        },
-        "velocity": {
-          "feature": "zone_east",
-          "range": [
-            0.3,
-            0.9
-          ],
-          "value": [
-            0.15,
-            0.5
-          ]
-        }
-      },
-      {
-        "id": "south_rains",
-        "instrument": "pluck",
-        "every_beats": 0.5,
-        "pitch": {
-          "feature": "zone_south",
-          "range": [
-            0.53,
-            0.82
-          ],
-          "degrees": [
-            4,
-            10
-          ]
-        },
-        "velocity": {
-          "feature": "zone_south",
-          "range": [
-            0.53,
-            0.82
-          ],
-          "value": [
-            0.1,
-            0.45
-          ]
-        },
-        "probability": {
-          "feature": "zone_south",
-          "range": [
-            0.6,
-            0.82
-          ],
-          "value": [
-            0.0,
-            0.5
-          ]
-        }
-      }
-    ]
+    "pad_gain": 0.25,
+    "drone": {
+      "gain": 0.14,
+      "D": [
+        "D2",
+        "D3",
+        "A3"
+      ],
+      "F": [
+        "F2",
+        "F3",
+        "C4"
+      ]
+    },
+    "air": {
+      "winter_variant": "howl",
+      "winter_range": [
+        0.1,
+        0.4
+      ],
+      "winter_gain": 0.75,
+      "intensity_range": [
+        0.1,
+        0.6
+      ],
+      "warm_sample": "wind_warm.m4a",
+      "warm_gain_summer": 0.45,
+      "warm_gain_spring": 0.2,
+      "autumn_variant": "classic",
+      "dry_gain": 0.45,
+      "dry_intensity": 0.3,
+      "spring_range": [
+        0.52,
+        0.8
+      ],
+      "autumn_range": [
+        0.48,
+        0.2
+      ],
+      "bare_range": [
+        0.15,
+        0.35
+      ],
+      "bare_quieter": 0.5
+    },
+    "birds": {
+      "sample": "birds.m4a",
+      "green_range": [
+        0.3,
+        0.85
+      ],
+      "gain": [
+        0.0,
+        0.6
+      ]
+    },
+    "chimes": {
+      "min_green": 0.2,
+      "max_green": 0.9,
+      "per_bar": [
+        1,
+        8
+      ],
+      "ndvi_range": [
+        0.25,
+        0.65
+      ],
+      "base_degree": [
+        5,
+        9
+      ],
+      "pattern": [
+        0,
+        2,
+        1,
+        3,
+        2,
+        4,
+        3,
+        5
+      ],
+      "vel": [
+        0.35,
+        0.65
+      ],
+      "ring": [
+        2.0,
+        4.0
+      ],
+      "bright": [
+        0.3,
+        0.8
+      ]
+    },
+    "drips": {
+      "melt_lag": 10,
+      "melt_range": [
+        0.0,
+        0.12
+      ],
+      "per_bar": [
+        0,
+        6
+      ],
+      "base_degree": 10,
+      "pattern": [
+        0,
+        3,
+        1,
+        4,
+        2,
+        3
+      ],
+      "vel": 0.5
+    },
+    "wood": {
+      "per_bar": [
+        0,
+        3
+      ],
+      "earth_range": [
+        0.12,
+        0.3
+      ],
+      "vel": 0.4
+    },
+    "wind": {
+      "phrase_every_bars": 2,
+      "phrase_notes": [
+        2,
+        5
+      ],
+      "start_degree": [
+        2,
+        6
+      ],
+      "note_beats": [
+        0.5,
+        2.0
+      ],
+      "glide_up": 0.6,
+      "glide_down": 0.4,
+      "vel": 0.3
+    }
   },
   "default": {
     "tempo_bpm": 84,
