@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Макети інтерфейсу</title>
+  <style>
+    :root { --bg:#0b1020; --fg:#e8ecf5; --muted:#9aa4bd; --accent:#4fa3ff; --card:#151c33; --line:#2a3354; --green:#7fd18b; --snow:#dfe8ff; --gold:#ffd54f; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.4; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    h1 { margin: 8px 0 4px; } h2 { margin: 40px 0 6px; border-top: 1px solid var(--line); padding-top: 24px; }
+    .lead { color: var(--muted); }
+    .code { display:inline-block; font-weight:800; background: var(--accent); color:#fff; border-radius:6px; padding:1px 8px; margin-right:6px; }
+    .variants { display:grid; gap:18px; }
+    .v { background: var(--card); border-radius: 14px; padding: 14px; }
+    .v h3 { margin: 0 0 4px; } .v .why { color: var(--muted); margin: 0 0 12px; font-size: .95rem; }
+    .pros { font-size:.9rem; color: var(--muted); margin: 10px 0 0; }
+    .pros b { color: var(--fg); }
+
+    /* спільні елементи-заглушки */
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--line); font-size:.9rem; }
+    .chip.on { background: var(--accent); border-color: var(--accent); }
+    .vid { position:relative; border-radius:10px; overflow:hidden; background:#000; }
+    .vid img { display:block; width:100%; }
+    .vid .blur { filter: blur(10px) brightness(.45); }
+    .bar { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; margin-top:8px; }
+    .btn { width:44px; height:44px; border-radius:50%; background: var(--accent); display:grid; place-items:center; font-size:20px; }
+    .track { position:relative; height:10px; border-radius:5px; background: var(--line); }
+    .track i { position:absolute; left:0; top:0; bottom:0; width:22%; background: var(--accent); border-radius:5px; }
+    .seasons { display:flex; height:10px; border-radius:5px; overflow:hidden; }
+    .seasons span { flex:1; } .w{background:#8aa4d6}.sp{background:#7fd18b}.su{background:#2f9e44}.au{background:#c9893b}
+    .knob { position:absolute; top:-5px; width:20px; height:20px; border-radius:50%; background:#fff; left:21%; }
+    .date { font-variant-numeric: tabular-nums; color: var(--muted); }
+    .big-date { font-size: 1.6rem; font-weight: 700; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    @media (max-width: 760px) { .row { grid-template-columns: 1fr; } }
+    .tabs { display:flex; gap:0; margin:12px 0 10px; border:1px solid var(--line); border-radius:10px; overflow:hidden; width:max-content; }
+    .tabs span { padding:8px 16px; } .tabs .on { background: var(--accent); }
+    .card { background:#0f1528; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+    .muted { color: var(--muted); }
+    .sound-cards { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; }
+    .sc { text-align:center; padding:10px 6px; border-radius:10px; background:#0f1528; border:1px solid var(--line); }
+    .sc .ic { font-size:28px; } .sc.on { border-color: var(--green); box-shadow: 0 0 18px rgba(127,209,139,.35); }
+    .sc.off { opacity:.35; }
+    .subtitle { background: rgba(0,0,0,.55); position:absolute; left:0; right:0; bottom:0; padding:10px 14px; font-size:1.05rem; }
+    .eq { display:grid; gap:6px; } .eq div { display:grid; grid-template-columns: 2em 8em 1fr; gap:8px; align-items:center; }
+    .eq .lvl { height:8px; border-radius:4px; background: var(--line); position:relative; } .eq .lvl i { position:absolute; inset:0 auto 0 0; background: var(--green); border-radius:4px; }
+    details { margin-top:8px; } summary { cursor:pointer; color: var(--muted); }
+    .tech { font-family: ui-monospace, monospace; font-size:.8rem; color: var(--muted); }
+
+    /* нейрони */
+    .sky { position:relative; background: radial-gradient(ellipse at 50% 120%, #1a2450 0%, #070a16 70%); border-radius:12px; overflow:hidden; }
+    .stars { position:absolute; inset:0; background-image: radial-gradient(1px 1px at 10% 20%, #fff8, transparent), radial-gradient(1px 1px at 30% 70%, #fff6, transparent), radial-gradient(1px 1px at 55% 35%, #fff9, transparent), radial-gradient(1px 1px at 80% 60%, #fff7, transparent), radial-gradient(1px 1px at 90% 15%, #fff8, transparent), radial-gradient(1px 1px at 65% 85%, #fff6, transparent); }
+    .neurons { position:relative; height:120px; }
+    .n { position:absolute; width:22px; height:22px; border-radius:50%; background: radial-gradient(circle, #cfe0ff 0%, #6f8bd8 60%, transparent 70%); transform: translate(-50%,-50%); }
+    .n.lit { background: radial-gradient(circle, #fff 0%, var(--gold) 55%, transparent 72%); box-shadow: 0 0 22px var(--gold); }
+    .n.now { outline: 2px dashed var(--gold); outline-offset: 6px; }
+    .n label { position:absolute; top:22px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:.75rem; color: var(--muted); }
+    svg.links { position:absolute; inset:0; width:100%; height:100%; }
+    .q { background: rgba(8,10,8,.85); border:1px solid rgba(159,214,160,.45); border-radius:12px; padding:12px 14px; }
+    .q .title { font-size:1.15rem; font-weight:700; margin-bottom:8px; }
+    .ans { display:flex; gap:8px; flex-wrap:wrap; }
+    .ans span { padding:10px 18px; border-radius:10px; background: var(--card); border:1px solid var(--line); font-size:1.05rem; }
+    .ans .big { font-size:1.6rem; padding:10px 22px; }
+    .listen { display:inline-block; padding:8px 14px; border-radius:10px; border:1px solid var(--accent); color: var(--accent); margin-bottom:8px; }
+    .slider { position:relative; height:12px; border-radius:6px; background: linear-gradient(90deg, #c9893b, #7fd18b, #2f9e44); margin:16px 0 6px; }
+    .slider b { position:absolute; top:-7px; left:62%; width:26px; height:26px; border-radius:50%; background:#fff; }
+    .tmpl { display:grid; gap:8px; } .tmpl div { display:grid; grid-template-columns: 3em 1fr 14em; gap:10px; align-items:start; padding:8px 10px; background:#0f1528; border-radius:8px; }
+    @media (max-width: 760px) { .tmpl div { grid-template-columns: 3em 1fr; } .tmpl div em { grid-column: 2; } }
+    .tmpl em { color: var(--muted); font-style: normal; font-size: .9rem; }
+    .worldmap { position:relative; } .worldmap img { width:100%; display:block; border-radius:10px; }
+    .hot { position:absolute; border:2px solid transparent; border-radius:14px; display:grid; place-items:center; font-weight:700; text-shadow:0 1px 4px #000; }
+    .hot.on { border-color: var(--gold); background: rgba(255,213,79,.15); }
+    .two { display:grid; grid-template-columns: 1.6fr 1fr; gap:12px; } @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+    .answer-box { margin-top: 30px; padding: 16px; background: var(--card); border-radius: 12px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>🧩 Макети інтерфейсу (заглушки)</h1>
+  <p class="lead">Це <b>не робочі</b> екрани, лише варіанти вигляду. У кожного є код. Оберіть по одному в кожному розділі (можна комбінувати або написати «як L1, але…») і надішліть, наприклад: <b>L1 + C1 + S2 + питання T2, T3 + відповідь A2</b>.</p>
+
+  <!-- ===================== 1. СХЕМА СТОРІНКИ ===================== -->
+  <h2>1. Загальна схема: як поєднати джукбокс і гру</h2>
+  <p class="lead">Ідея: <b>одна сторінка</b>, той самий плеєр і звук. Гра — це режим поверх плеєра, а не окрема сторінка. Технічних рядків (t=6.1s, air_winter 0%) немає взагалі або вони сховані в «Деталі».</p>
+  <div class="variants">
+
+    <div class="v">
+      <h3><span class="code">L1</span>Плеєр + перемикач режимів «Слухати / Грати»</h3>
+      <p class="why">Звична сторінка: зверху континенти, далі відео й одна кнопка. Під відео два режими. У «Слухати» видно, що звучить; у «Грати» з'являються нейрони-періоди й питання.</p>
+      <div class="chips"><span class="chip">🌍 Світ</span><span class="chip on">Пн. Америка</span><span class="chip">Пд. Америка</span><span class="chip">Євразія</span><span class="chip">Африка</span><span class="chip">Австралія</span></div>
+      <div class="row">
+        <div>
+          <div class="vid"><img src="mock/north_america_summer.jpg" alt=""></div>
+          <div class="bar"><span class="btn">▶</span><div class="track"><i></i></div><span class="date">квітень 2024</span></div>
+        </div>
+        <div>
+          <div class="tabs"><span class="on">🎧 Слухати</span><span>🧠 Грати</span></div>
+          <div class="sound-cards"><div class="sc off"><div class="ic">❄</div>Хуртовина</div><div class="sc on"><div class="ic">🎐</div>Колокольчики</div><div class="sc on"><div class="ic">💧</div>Капель</div><div class="sc"><div class="ic">🐦</div>Птахи</div></div>
+          <p class="muted" style="margin-top:10px">Квітень 2024: сніг тане, з'являються перші колокольчики.</p>
+        </div>
+      </div>
+      <p class="pros"><b>+</b> найпростіше, працює на телефоні, легко пояснити журі. <b>−</b> гра менш «магічна».</p>
+    </div>
+
+    <div class="v">
+      <h3><span class="code">L2</span>«Сузір'я»: зоряне небо як у прототипі, плеєр у вікні зверху</h3>
+      <p class="why">Атмосфера прототипу «Ліси й нейрони». Відео — вікно зверху (розмите, поки відрізок не відкрито). Нейрони-квартали внизу на небі. Режим «Слухати» = вільний політ: усі зв'язки вже відкриті.</p>
+      <div class="sky" style="padding:14px">
+        <div class="stars"></div>
+        <div class="chips" style="position:relative"><span class="chip">🌍</span><span class="chip on">Пн. Америка</span><span class="chip">Пд. Америка</span><span class="chip">Євразія</span><span class="chip">Африка</span><span class="chip">Австралія</span></div>
+        <div style="position:relative; width:60%; margin:0 auto" class="vid"><img class="blur" src="mock/north_america_summer.jpg" alt=""><div class="subtitle" style="text-align:center">🔒 Відкрийте відрізок відповіддю</div></div>
+        <div class="neurons" style="margin-top:10px">
+          <svg class="links"><path d="M 60 70 Q 120 30 180 60" stroke="#ffd54f" stroke-width="3" fill="none"/><path d="M 180 60 Q 240 20 300 70" stroke="#ffd54f" stroke-width="3" fill="none"/></svg>
+          <div class="n lit" style="left:60px;top:70px"><label>січ 2024</label></div><div class="n lit" style="left:180px;top:60px"><label>квіт</label></div><div class="n lit now" style="left:300px;top:70px"><label>лип</label></div>
+          <div class="n now" style="left:420px;top:55px"><label>жовт</label></div><div class="n" style="left:540px;top:75px"><label>січ 2025</label></div><div class="n" style="left:660px;top:58px"><label>квіт</label></div><div class="n" style="left:780px;top:72px"><label>лип</label></div>
+        </div>
+        <div class="q" style="position:relative; max-width:520px; margin:6px auto 0"><div class="title">Липень → жовтень: зелень росте чи спадає?</div><div class="ans"><span>↗ Росте</span><span>↘ Спадає</span><span>🔔 Підказка</span></div></div>
+      </div>
+      <p class="pros"><b>+</b> найкрасивіше, відразу «гра», ваш прототип стає основою. <b>−</b> складніше зробити, на телефоні тісно.</p>
+    </div>
+
+    <div class="v">
+      <h3><span class="code">L3</span>Карта світу як головне меню → сторінка континенту з бічною панеллю</h3>
+      <p class="why">Перший екран — карта, на якій континенти підсвічуються. Клік відкриває сторінку континенту: відео ліворуч, праворуч панель «Слухати / Грати».</p>
+      <div class="worldmap"><img src="mock/world_summer.jpg" alt="">
+        <div class="hot" style="left:3%;top:10%;width:30%;height:36%">Пн. Америка</div>
+        <div class="hot" style="left:26%;top:50%;width:13%;height:42%">Пд. Америка</div>
+        <div class="hot on" style="left:45%;top:35%;width:19%;height:52%">Африка</div>
+        <div class="hot" style="left:47%;top:6%;width:52%;height:52%">Євразія</div>
+        <div class="hot" style="left:81%;top:66%;width:12%;height:22%">Австралія</div>
+      </div>
+      <div class="two" style="margin-top:12px">
+        <div class="vid"><img src="mock/africa_summer.jpg" alt=""></div>
+        <div class="card"><div class="tabs" style="margin-top:0"><span class="on">🎧 Слухати</span><span>🧠 Грати</span></div><p>🎐 Колокольчики: 6 на такт<br>🍂 Суха пора: сухий вітер<br>🐦 Птахи співають</p></div>
+      </div>
+      <p class="pros"><b>+</b> красивий вхід, карта сама пояснює вибір регіону. <b>−</b> на один клік більше, бічна панель не влазить на телефон.</p>
+    </div>
+  </div>
+
+  <!-- ===================== 2. КЕРУВАННЯ ===================== -->
+  <h2>2. Керування: ОДНА кнопка замість трьох</h2>
+  <p class="lead">Зараз є «Грати зі звуком», «Стоп» і ⏯. Залишаємо одну кнопку ▶/⏸ (і пробіл на клавіатурі). Різниця між варіантами лише в шкалі часу.</p>
+  <div class="variants">
+    <div class="v">
+      <h3><span class="code">C1</span>Кнопка + шкала з кольоровими порами року + дата</h3>
+      <div class="bar"><span class="btn">⏸</span><div style="position:relative"><div class="seasons"><span class="w"></span><span class="sp"></span><span class="su"></span><span class="au"></span><span class="w"></span><span class="sp"></span><span class="su"></span><span class="au"></span><span class="w"></span><span class="sp"></span></div><span class="knob"></span><div class="muted" style="display:flex;justify-content:space-between;font-size:.8rem;margin-top:6px"><span>2024</span><span>2025</span><span>2026</span></div></div><span class="date">5 квіт 2024</span></div>
+      <p class="pros">Видно, де зима (синє), весна, літо, осінь. Можна перемотати на потрібний сезон.</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">C2</span>Кнопка прямо на відео + проста шкала + швидкість</h3>
+      <div class="vid" style="max-width:520px"><img src="mock/eurasia_winter.jpg" alt=""><div style="position:absolute;inset:0;display:grid;place-items:center"><span class="btn" style="width:72px;height:72px;font-size:34px">▶</span></div></div>
+      <div class="bar" style="max-width:520px"><span class="muted">0:42</span><div class="track"><i></i><span class="knob"></span></div><span class="chip">0.25× ▾</span></div>
+      <p class="pros">Як YouTube, знайомо всім. Швидкість: 0.25× (2 хв), 0.5×, 1× (30 с).</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">C3</span>Мінімалізм: велика дата над відео, тонка «стрічка років»</h3>
+      <div class="big-date">Квітень 2024</div>
+      <div class="bar"><span class="btn">▶</span><div class="track" style="height:4px"><i></i></div><span></span></div>
+      <p class="pros">Акцент на даті: чути й видно, «де ми в році». Найчистіше.</p>
+    </div>
+  </div>
+
+  <!-- ===================== 3. ЩО ЗВУЧИТЬ ===================== -->
+  <h2>3. «Що зараз звучить» без технічних цифр</h2>
+  <div class="variants">
+    <div class="v">
+      <h3><span class="code">S1</span>Картки звуків, що світяться, коли звучать</h3>
+      <div class="sound-cards"><div class="sc on"><div class="ic">❄</div>Хуртовина</div><div class="sc off"><div class="ic">🎐</div>Колокольчики<br><small class="muted">зелені мало</small></div><div class="sc on"><div class="ic">💧</div>Капель<br><small class="muted">сніг тане</small></div><div class="sc off"><div class="ic">🐦</div>Птахи</div></div>
+      <details><summary>Шари: вимкнути окремі звуки ▸</summary><p class="muted">☑ Вітер ☑ Колокольчики ☑ Птахи ☑ Капель ☑ Дерево ☑ Голос ☑ Фон</p></details>
+      <p class="pros">Клік на картку вмикає або вимикає звук (заміна вимикачам).</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">S2</span>Одне речення-субтитр під відео</h3>
+      <div class="vid" style="max-width:620px"><img src="mock/north_america_winter.jpg" alt=""><div class="subtitle">Березень 2024 · Сніг ще лежить, але вже тане: чути <b>капель</b>. Зелені мало, тому <b>колокольчики мовчать</b>.</div></div>
+      <p class="pros">Найзрозуміліше для незрячих (скрінрідер читає це речення), нічого зайвого.</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">S3</span>Рівні звуків (смужки) + технічні цифри сховані в «Деталі»</h3>
+      <div class="eq"><div><span>🌬</span><span>Вітер</span><span class="lvl"><i style="width:70%"></i></span></div><div><span>🎐</span><span>Колокольчики</span><span class="lvl"><i style="width:20%"></i></span></div><div><span>🐦</span><span>Птахи</span><span class="lvl"><i style="width:10%"></i></span></div><div><span>💧</span><span>Капель</span><span class="lvl"><i style="width:55%"></i></span></div></div>
+      <details><summary>Деталі для журі ▸</summary><p class="tech">сніг 46% · гола земля 31% · зелень 23% · NDVI 0.29 · зелень росте (0.74)</p></details>
+      <p class="pros">Видно силу кожного звуку, а дані є для тих, кому цікаво.</p>
+    </div>
+  </div>
+
+  <!-- ===================== 4. ГРА: ПИТАННЯ ===================== -->
+  <h2>4. Гра: шаблонні питання (однакові для кожного континенту)</h2>
+  <p class="lead">Цикл: <b>слухаєш відрізок</b> (відео розмите) → <b>відповідаєш</b> → два нейрони-періоди <b>з'єднуються</b>, відео відкривається й грає з тим самим звуком → наступний відрізок. Відповідь рахується з даних, тож питання чесні для будь-якого континенту. Позначте, які шаблони беремо.</p>
+  <div class="tmpl">
+    <div><span class="code">T1</span><span>«На відрізку <b>квітень → липень</b> снігу стало <b>менше</b>?» Так / Ні</span><em>чути: хуртовина стихає</em></div>
+    <div><span class="code">T2</span><span>«Чого на відрізку <b>більше</b>: снігу ❄ чи зелені 🌿?»</span><em>хуртовина vs колокольчики</em></div>
+    <div><span class="code">T3</span><span>«Зелень на відрізку <b>росте</b> ↗ чи <b>спадає</b> ↘?»</span><em>мелодія вгору/вниз, капель vs сухий вітер</em></div>
+    <div><span class="code">T4</span><span>«Яка <b>пора року</b> звучить?» Зима / Весна / Літо / Осінь</span><em>уся палітра звуків</em></div>
+    <div><span class="code">T5</span><span>«У якому з двох періодів <b>більше зелені</b>?» (як у прототипі: клік на нейрон)</span><em>кількість колокольчиків</em></div>
+    <div><span class="code">T6</span><span>«Чи тане тут сніг?» Так / Ні</span><em>є капель чи ні</em></div>
+    <div><span class="code">T7</span><span><i>(пізніше, між континентами)</i> «Де весна прийшла раніше: Пн. Америка чи Євразія?»</span><em>порівняння двох треків</em></div>
+  </div>
+
+  <!-- ===================== 5. ГРА: ЯК ВІДПОВІДАТИ ===================== -->
+  <h2>5. Гра: як відповідати</h2>
+  <div class="variants">
+    <div class="v">
+      <h3><span class="code">A1</span>Великі кнопки з іконками під питанням</h3>
+      <div class="q"><div class="listen">🔊 Прослухати відрізок ще раз</div><div class="title">Чого на відрізку більше: снігу чи зелені?</div><div class="ans"><span class="big">❄ Снігу</span><span class="big">🌿 Зелені</span></div></div>
+      <p class="pros">Просто, зручно з клавіатури (1/2) і на телефоні. Підходить для T1–T4, T6.</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">A2</span>Клік на нейрон (як у прототипі)</h3>
+      <div class="sky" style="padding:10px"><div class="stars"></div>
+        <div class="q" style="position:relative;max-width:420px;margin:0 auto 6px"><div class="title">У якому періоді більше зелені?</div></div>
+        <div class="neurons" style="height:90px"><div class="n now" style="left:35%;top:45px"><label>квітень 2024 · 🔊</label></div><div class="n now" style="left:65%;top:45px"><label>липень 2024 · 🔊</label></div></div>
+      </div>
+      <p class="pros">Найбільш «ігрове», прямо з'єднує нейрони. Підходить для T5, T7.</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">A3</span>Протягнути зв'язок від нейрона до відповіді</h3>
+      <div class="sky" style="padding:10px;height:150px"><div class="stars"></div>
+        <svg class="links"><path d="M 120 75 Q 250 20 380 50" stroke="#ffd54f" stroke-width="3" stroke-dasharray="6 6" fill="none"/></svg>
+        <div class="n lit" style="left:120px;top:75px"><label>відрізок</label></div>
+        <div style="position:absolute;left:380px;top:35px" class="ans"><span>↗ росте</span></div><div style="position:absolute;left:380px;top:95px" class="ans"><span>↘ спадає</span></div>
+      </div>
+      <p class="pros">Найефектніше, але гірше з клавіатури та скрінрідером (потрібна альтернатива).</p>
+    </div>
+    <div class="v">
+      <h3><span class="code">A4</span>Повзунок-оцінка «скільки зелені»</h3>
+      <div class="q"><div class="title">Скільки зелені на цьому відрізку?</div><div class="slider"><b></b></div><div class="muted" style="display:flex;justify-content:space-between"><span>мало</span><span>багато</span></div></div>
+      <p class="pros">Бали за близькість до правди. Складніше, для «експертного» рівня.</p>
+    </div>
+  </div>
+
+  <div class="answer-box">
+    <h3 style="margin-top:0">Мої рекомендації</h3>
+    <p><b>L1 + C1 + S2</b> (з картками S1 як вимикачами), <b>питання T2, T3, T4, T6</b>, відповіді <b>A1</b>, плюс <b>A2</b> для T5. Нейрони й зв'язки з прототипу живуть у режимі «Грати» як стрічка періодів. Так одна сторінка лишається простою, працює на телефоні й зі скрінрідером, а гра вбудована, а не окрема.</p>
+    <p class="muted">Ще ідея: «Режим із заплющеними очима» — відео повністю приховане, гра лише на слух. Це прямо про доступність, головну тему челенджу.</p>
+  </div>
+</main>
+</body>
+</html>
