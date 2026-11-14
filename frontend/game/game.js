@@ -1,145 +1,146 @@
-// Гра «де більше птахів?» — ЗАГОТОВКА, яку розвиває №5 (гейміфікація).
-// Дані: GET /api/quiz/<id> (роки, метрики, правильні відповіді) і GET /api/score/<id> (звук).
-// Звук: спільний ScorePlayer з ../player.js.
-import { ScorePlayer } from "../player.js";
+// ГРА «нейрони»: правила й порядок подій. 
+//   вигляд → UI (ui-stub.js)      звук → Sonif (sonif-stub.js)      дані → CLIP (clip-stub.js)
+// Коли з'являться справжні файли від колег, міняються ТІЛЬКИ ці два рядки імпорту (і clip-stub → API):
+import { Sonif } from "./prototype/sonif-stub.js";
+import { UI } from "./prototype/ui-stub.js";
+import { CLIP } from "./prototype/clip-stub.js";
 
-const VIDEO_ID = new URLSearchParams(location.search).get("video") || "cancun_landcover";
-const SEGMENT_SECONDS = 6; // скільки реальних секунд звучить відрізок між двома роками
+// Два шляхи через одну й ту саму пару, результат однаковий (зв'язок + відкритий фрагмент):
+//   1) відповідь на питання → Game.pick(i)  (клік / Enter на нейроні)
+//   2) дзвіночок / ПРОБІЛ    → Game.bell()   (без питання; для незрячих і щоб пропустити)
+// Голос каже лише ділянку («Ділянка з … по …») і наприкінці підказку про Ctrl. Ні «вірно», ні «перемога».
 
-// Тексти. Подача англійською → додайте "en" і перемикач мови.
+const BELL_PAUSE = 2500;   // мс: дзвін, потім той самий фрагмент
+const SEGMENT_SECONDS = 6;
+
+// Типи питань. score(levels) — «скільки цього» в році; правильний нейрон = де score більший (dir 1) або менший (dir -1).
+// Рахується з Sonif.getLevels(i), тобто з тих самих даних, що чутно у звуці.
+const QUESTIONS = [
+  { text: "У якому періоді природа живіша?",        score: (l) => l.birds + l.chimes, dir: 1 },
+  { text: "У якому періоді птахи активніші?",        score: (l) => l.birds,            dir: 1 },
+  { text: "Де віє теплий літній вітер?",             score: (l) => l.wind,             dir: -1 },
+  { text: "Де віє хуртовина?",                       score: (l) => l.wind,             dir: 1 },
+  { text: "У якому періоді природа заснула?",        score: (l) => l.birds + l.chimes, dir: -1 },
+];
+
 const T = {
-  more: (s) => `У якому році БІЛЬШЕ ${s === "birds" ? "птахів" : s}?`,
-  less: (s) => `У якому році МЕНШЕ ${s === "birds" ? "птахів" : s}?`,
-  listen: "🔊 Слухати",
-  correct: "Правильно! Слухаємо, як змінювався звук.",
-  wrong: "Ні. Послухайте ще раз баланс звуків.",
-  hint: "Підказка: відкриваємо відрізок.",
-  win: (score, total) => `Перемога! ${score} з ${total} з першої спроби. Натисніть «Почати», щоб послухати все.`,
-  pair: (a, b) => `Наступна пара: ${a} і ${b}.`,
+  hint: "Можна натиснути пробіл і послухати цей фрагмент без питання",
+  section: (a, b) => `Ділянка з ${a.gen} по ${b.label}`,
+  dynamics: (a, b) => `Динаміка: ${a.label} – ${b.label}`,
+  done: "Нейронну мережу збудовано",
+  allBtn: "Слухати весь період (Ctrl)",
+  allAgain: "Слухати ще раз (Ctrl)",
+  allSay: "Натисніть Ctrl, щоб послухати весь часовий проміжок",
+  allTitle: (a, b) => `Увесь період з ${a.gen} по ${b.label}`,
+  pair: (n, total) => `Пара ${n} з ${total}`,
 };
 
-const $ = (id) => document.getElementById(id);
-const video = $("video");
-const announce = (text) => ($("announce").textContent = text);
+const years = CLIP.years;
+const state = { pair: 0, busy: false, finished: false, errors: 0, firstTry: 0, q: [] };
+const pairCount = () => years.length - 1;
 
-const state = { quiz: null, player: null, pair: 0, fixedT: null, busy: false, firstTry: 0, errors: 0, questions: [] };
-
-async function getJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${url}: ${r.status}`);
-  return r.json();
+function correctNeuron(pairIdx) {              // яка з двох відповідей правильна
+  const q = state.q[pairIdx], a = pairIdx, b = pairIdx + 1;
+  const sa = q.score(Sonif.getLevels(a)) * q.dir, sb = q.score(Sonif.getLevels(b)) * q.dir;
+  return sa >= sb ? a : b;
 }
 
-/** Звук одного року: «заморожуємо» час на ключовому кадрі */
-function listenYear(i) {
-  if (state.busy) return;
-  const kf = state.quiz.keyframes[i];
-  state.fixedT = kf.t;
-  video.currentTime = kf.t;
-  state.player.resume();
-  announce(`${kf.label}`);
-  clearTimeout(state.listenTimer);
-  state.listenTimer = setTimeout(() => state.player.pause(), 3000);
+function askPair() {
+  const a = state.pair, b = a + 1;
+  if (!state.q[a]) state.q[a] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+  UI.showHint("");
+  UI.showPair(a, b);
+  UI.showQuestion(state.q[a].text);
+  UI.showBell(true);
+  UI.setScore(T.pair(a + 1, pairCount()));
+  const text = T.section(years[a], years[b]);
+  UI.announce(text);
+  UI.speak(text);
 }
 
-/** Програти відрізок між роками a→b уповільнено, потім наступна пара */
-function playSegment(a, b) {
-  const [ka, kb] = [state.quiz.keyframes[a], state.quiz.keyframes[b]];
+async function unlock(withBell) {              // відкрити фрагмент поточної пари
+  const a = state.pair, b = a + 1;
   state.busy = true;
-  state.fixedT = null;
-  video.currentTime = ka.t;
-  video.playbackRate = Math.max((kb.t - ka.t) / SEGMENT_SECONDS, 0.0625);
-  state.player.resume();
-  video.play();
-  const stopAt = () => {
-    if (video.currentTime < kb.t) return requestAnimationFrame(stopAt);
-    video.pause();
-    state.player.pause();
-    state.busy = false;
-    state.pair++;
-    state.errors = 0;
-    render();
-  };
-  requestAnimationFrame(stopAt);
-}
-
-function answer(i) {
-  if (state.busy) return;
-  const p = state.quiz.pairs[state.pair];
-  const correct = state.questions[state.pair] === "more" ? p.more : p.less;
-  if (i === correct) {
-    if (state.errors === 0) state.firstTry++;
-    announce(T.correct);
-    playSegment(p.a, p.b);
+  UI.link(a, b);
+  if (withBell) {
+    UI.ringBell(); Sonif.cue("bell");
+    await new Promise((r) => setTimeout(r, BELL_PAUSE));
+    if (++state.errors >= 2) UI.showHint(T.hint);
   } else {
-    state.errors++;
-    announce(T.wrong);
+    Sonif.cue("correct");
   }
+  UI.unlockScreen(T.dynamics(years[a], years[b]));
+  await Sonif.playInterval(a, SEGMENT_SECONDS);   // чекаємо, поки фрагмент дограє
+  UI.lockScreen();
+  state.busy = false; state.errors = 0; state.pair++;
+  if (state.pair >= pairCount()) finish(); else askPair();
 }
 
-function hint() {
-  if (state.busy || state.pair >= state.quiz.pairs.length) return;
-  const p = state.quiz.pairs[state.pair];
-  announce(T.hint);
-  playSegment(p.a, p.b);
+function finish() {                            // усі фрагменти відкриті
+  state.finished = true;
+  UI.showBell(false); UI.hideQuestion(); UI.setScore("");
+  UI.showMessage(T.done, T.allBtn, () => Game.playAll());
+  UI.announce(T.allSay); UI.speak(T.allSay);
 }
 
-function render() {
-  const { quiz } = state;
-  const box = $("years");
-  box.innerHTML = "";
-  if (state.pair >= quiz.pairs.length) {
-    $("question").textContent = "";
-    $("hint-btn").hidden = true;
-    $("start-btn").hidden = false;
-    $("start-btn").textContent = "▶ Послухати весь період";
-    $("start-btn").onclick = () => playSegment(0, quiz.keyframes.length - 1);
-    announce(T.win(state.firstTry, quiz.pairs.length));
-    $("score").textContent = T.win(state.firstTry, quiz.pairs.length);
-    return;
-  }
-  const p = quiz.pairs[state.pair];
-  if (!state.questions[state.pair]) state.questions[state.pair] = Math.random() < 0.5 ? "more" : "less";
-  $("question").textContent = T[state.questions[state.pair]](quiz.subject);
-  for (const i of [p.a, p.b]) {
-    const kf = quiz.keyframes[i];
-    const card = document.createElement("div");
-    card.className = "year";
-    card.innerHTML = `<button class="pick" type="button" aria-label="Відповідь: ${kf.label}">${kf.label}</button>
-                      <button class="listen" type="button" aria-label="Слухати ${kf.label}">${T.listen}</button>`;
-    card.querySelector(".pick").onclick = () => answer(i);
-    card.querySelector(".listen").onclick = () => listenYear(i);
-    box.append(card);
-  }
-  $("score").textContent = `Пара ${state.pair + 1} з ${quiz.pairs.length}`;
-  announce($("question").textContent + " " + T.pair(quiz.keyframes[p.a].label, quiz.keyframes[p.b].label));
-}
+export const Game = {
+  /** Кнопка «Почати дослідження» на стартовому екрані */
+  start() {
+    state.pair = 0; state.busy = false; state.finished = false; state.errors = 0; state.firstTry = 0; state.q = [];
+    UI.hideMessage();
+    askPair();
+  },
 
-async function init() {
-  const [quiz, score, videos] = await Promise.all([
-    getJSON(`/api/quiz/${VIDEO_ID}`), getJSON(`/api/score/${VIDEO_ID}`), getJSON("/api/videos"),
-  ]);
-  state.quiz = quiz;
-  const meta = videos.find((v) => v.id === VIDEO_ID);
-  video.src = meta?.has_local_video ? `/media/${meta.local_video}` : meta?.video_url || "";
-  state.player = new ScorePlayer(score, {
-    getTime: () => state.fixedT ?? video.currentTime,
-    getRate: () => video.playbackRate,
-  });
-  await state.player.load();
+  /** Гравець обрав нейрон i */
+  pick(i) {
+    if (state.busy || state.finished) return;
+    const a = state.pair, b = a + 1;
+    if (i !== a && i !== b) return;
+    if (i === correctNeuron(a)) {
+      if (state.errors === 0) state.firstTry++;
+      unlock(false);
+    } else {
+      Sonif.cue("wrong"); UI.wrong(i);         // звук без слів + реакція на екрані
+      if (++state.errors >= 2) UI.showHint(T.hint);
+    }
+  },
 
-  $("start-btn").onclick = async () => {
-    await Tone.start();
-    state.player.start();
-    state.player.pause();
-    $("start-btn").hidden = true;
-    $("hint-btn").hidden = false;
-    render();
-  };
-  $("hint-btn").onclick = hint;
-  window.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && !$("hint-btn").hidden && e.target === document.body) { e.preventDefault(); hint(); }
-  });
-}
+  /** Кнопка «Слухати» під нейроном: звук одного року */
+  async listen(i) {
+    if (state.busy || state.finished) return;
+    UI.stopSpeak(); UI.announce(years[i].label);
+    await Sonif.playYear(i);
+  },
 
-init().catch((e) => ($("question").textContent = "Помилка: " + e.message));
+  /** Колокольчик / ПРОБІЛ: відкрити фрагмент без питання */
+  bell() {
+    if (state.busy || state.finished) return;
+    UI.stopSpeak();
+    unlock(true);
+  },
+
+  /** Ctrl: уся сонифікація (доступна після проходження) */
+  async playAll() {
+    if (state.busy || !state.finished) return;
+    state.busy = true;
+    const first = years[0], last = years[years.length - 1];
+    UI.speak(T.allTitle(first, last));
+    UI.unlockScreen(T.allTitle(first, last));
+    await Sonif.playAll();
+    UI.lockScreen();
+    state.busy = false;
+    UI.showMessage(T.done, T.allAgain, () => Game.playAll());
+  },
+};
+
+window.Game = Game; window.UI = UI; window.Sonif = Sonif;   // щоб кнопки й консоль бачили (UI.* кличе Game.*)
+
+window.addEventListener("keydown", (e) => {
+  if (e.code === "CapsLock") UI.toggleVoice();
+  if (e.code === "ControlLeft" || e.code === "ControlRight") { e.preventDefault(); Game.playAll(); }
+  if (e.code === "Space" && e.target === document.body) { e.preventDefault(); Game.bell(); }
+});
+
+UI.init();
+Sonif.init(document.getElementById("clip"));
+UI.showMessage("Нейронна мережа природи", "Почати дослідження", () => Game.start());
