@@ -2,6 +2,24 @@
   "_comment": "Каталог відео. Поля: id, title, svs_page (джерело), video_url (пряме посилання на MP4), extractors (basic | landcover), crop [x,y,w,h] і exclude [[x,y,w,h],...] у пікселях оригіналу, keyframes [{label, t}], preset (з sonify/presets.json). Детальніше: data/README.md",
   "videos": [
     {
+      "id": "ndvi_north_america",
+      "title": "Vegetation of North America (NDVI), Dec 2023 – Jun 2026",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": ["ndvi"],
+      "geo": { "lon": [-168, -52], "lat": [72, 14] },
+      "crop": [137, 205, 1320, 660],
+      "exclude": [[1195, 205, 262, 160]],
+      "timeline": { "dates_file": "data/sources/ndvi_dates.txt" },
+      "keyframes": "quarterly",
+      "preset": "vegetation",
+      "sample_fps": 10,
+      "quiz": { "subject": "vegetation", "metric": "ndvi_mean", "grows_with_metric": true }
+    },
+    {
       "id": "cancun_landcover",
       "title": "Cancun, Mexico: forest vs city, 1987–2018",
       "source": "Landsat time-lapse (запис екрана Google Earth Timelapse). TODO: знайти еквівалент на NASA SVS/EIC або вказати точне джерело",

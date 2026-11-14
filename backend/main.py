@@ -67,6 +67,7 @@ def list_videos() -> list[dict]:
             "has_features": features_path(v["id"]).exists(),
             "has_local_video": raw_path(v["id"]).exists(),
             "local_video": raw_path(v["id"]).name if raw_path(v["id"]).exists() else None,
+            "crop": v["crop"],  # [x, y, w, h] у пікселях оригіналу — фронт показує лише цю частину кадру
             "has_quiz": len(v["keyframes"]) >= 2,
             "description": descriptions.get(v["id"], {}),
         })
