@@ -1,0 +1,14 @@
+# Одне віртуальне середовище для pipeline/ і backend/
+# Pipeline (обробка відео → фічі)
+opencv-python-headless>=4.10
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+
+# Backend (API)
+fastapi>=0.115
+uvicorn[standard]>=0.30
+
+# ML (опційно, ставимо пізніше, бо важке):
+# torch
+# open_clip_torch

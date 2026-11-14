@@ -1,0 +1,26 @@
+{
+  "_comment": "Маппінг «фіча → звук». Кожна фіча має значення 0..1 і лінійно переводиться в діапазон [min, max]. Редагуйте сміливо, код міняти не потрібно.",
+  "root_note": "C3",
+  "bar_beats": 4,
+  "scales": {
+    "major": [0, 2, 4, 5, 7, 9, 11],
+    "minor": [0, 2, 3, 5, 7, 8, 10]
+  },
+  "mode": {
+    "feature": "warmth",
+    "threshold": 0.5,
+    "above": "minor",
+    "below": "major",
+    "hold_s": 3,
+    "_comment": "Дискретний параметр: змінюється лише на початку такту і якщо тримається ≥ hold_s секунд"
+  },
+  "params": {
+    "volume_db":       { "feature": "brightness",   "min": -28,  "max": -8 },
+    "tempo_bpm":       { "feature": "motion",       "min": 60,   "max": 130 },
+    "filter_hz":       { "feature": "edge_density", "min": 400,  "max": 5000 },
+    "pan":             { "feature": "centroid_x",   "min": -0.7, "max": 0.7 },
+    "melody_degree":   { "feature": "brightness",   "min": 0,    "max": 13, "_comment": "ступінь гами (0..13 = дві октави)" },
+    "percussion_prob": { "feature": "active_ratio", "min": 0,    "max": 0.9 },
+    "reverb_wet":      { "feature": "saturation",   "min": 0.1,  "max": 0.6 }
+  }
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Earth Information Jukebox</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Earth Information Jukebox</h1>
+    <p>Візуалізації NASA, перетворені на звук.</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="list-title">
+      <h2 id="list-title">Оберіть візуалізацію</h2>
+      <ul id="video-list" class="video-list"></ul>
+    </section>
+
+    <section aria-labelledby="player-title">
+      <h2 id="player-title">Плеєр</h2>
+      <video id="video" controls muted playsinline></video>
+      <p id="video-note" class="note"></p>
+      <div class="controls">
+        <button id="play-btn" type="button">▶ Грати зі звуком</button>
+        <button id="stop-btn" type="button">■ Стоп</button>
+      </div>
+      <!-- Для скрінрідерів: поточний стан звуку, оголошується без фокусу -->
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

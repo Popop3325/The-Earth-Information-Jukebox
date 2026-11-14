@@ -1,0 +1,13 @@
+{
+  "videos": [
+    { "id": "night_lights", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": null, "description": "" },
+    { "id": "sea_surface_currents", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": null, "description": "" },
+    { "id": "geos_aerosols", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null, "description": "" },
+    { "id": "air_quality", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": null, "description": "" },
+    { "id": "perpetual_ocean_2", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": null, "description": "" },
+    { "id": "dyamond_co2", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": null, "description": "" },
+    { "id": "iss_lightning", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": null, "description": "" },
+    { "id": "atmospheric_river", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": null, "description": "" },
+    { "id": "gedi_forest_height", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": null, "description": "" }
+  ]
+}

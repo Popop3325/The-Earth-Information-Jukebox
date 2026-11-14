@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Earth Jukebox features file",
+  "description": "Часова шкала фіч одного відео. Створює pipeline/run.py, читає frontend/audio.js. Змінювати лише після обговорення в команді.",
+  "type": "object",
+  "required": ["schema_version", "video_id", "sample_fps", "duration_s", "features", "frames"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "video_id": { "type": "string" },
+    "source_fps": { "type": "number", "description": "FPS оригінального відео" },
+    "sample_fps": { "type": "number", "description": "Скільки семплів на секунду відео пораховано" },
+    "duration_s": { "type": "number" },
+    "features": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Назви фіч, присутніх у кожному елементі frames. Опис кожної: pipeline/features.py"
+    },
+    "generated_at": { "type": "string" },
+    "is_sample": { "type": "boolean", "description": "true, якщо це фейкові дані-заглушка" },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["t"],
+        "properties": {
+          "t": { "type": "number", "description": "Час у секундах від початку відео" }
+        },
+        "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
