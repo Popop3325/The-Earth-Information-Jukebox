@@ -85,7 +85,7 @@ async function loadScore() {
     d.setDate(d.getDate() + Math.round(t * tl.days_per_second));
     return d.toISOString().slice(0, 10) + " · ";
   };
-  const explain = setupExplain(score, features, mutedGroups, (ids, m) => p.setMuted(ids, m));
+  let explain = null; // панель будуємо лише для «переможця» (див. нижче), інакше вона малює у видалені вузли
   p.onTick = (t) => {
     explain?.(t);
     const layers = p.layers.map((l) => `${l.id} ${(p.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
@@ -94,6 +94,7 @@ async function loadScore() {
   await p.load();
   if (token !== loadToken) return p.dispose(); // за цей час користувач обрав інше
   player = p;
+  explain = setupExplain(score, features, mutedGroups, (ids, m) => p.setMuted(ids, m));
   // Пресет може задати швидкість відео (напр. 0.25×), щоб у сітці 72 BPM вистачило тактів
   video.defaultPlaybackRate = video.playbackRate = score.playback_rate || 1;
   if (wasPlaying) player.start(); // зміна пресету під час гри не зупиняє звук
