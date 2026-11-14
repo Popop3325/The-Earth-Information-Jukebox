@@ -20,6 +20,51 @@ async function getJSON(url) {
 const hasVideo = () => !!video.getAttribute("src");
 const nowT = (score) => (hasVideo() ? video.currentTime : (Tone.now() - clockStart) % score.duration_s);
 
+// ---------- Відео на canvas: показуємо лише регіон (crop) у будь-якому браузері ----------
+const view = $("view");
+const ctx2d = view.getContext("2d");
+const seek = $("seek");
+let currentCrop = null; // [x, y, w, h] у пікселях оригіналу або null (увесь кадр)
+
+function srcRect() {
+  const W = video.videoWidth, H = video.videoHeight;
+  return currentCrop ? currentCrop : [0, 0, W, H];
+}
+function sizeCanvas() {
+  if (!video.videoWidth) return;
+  const [, , w, h] = srcRect();
+  const cssW = view.clientWidth || 960;
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  view.width = Math.round(cssW * scale);
+  view.height = Math.round((cssW * h / w) * scale);
+}
+function drawFrame() {
+  if (video.readyState < 2) return;
+  const [x, y, w, h] = srcRect();
+  ctx2d.drawImage(video, x, y, w, h, 0, 0, view.width, view.height);
+}
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function updateSeek() {
+  const d = video.duration || 0;
+  if (!seek.matches(":active")) seek.value = d ? Math.round((video.currentTime / d) * 1000) : 0;
+  // реальний час з урахуванням швидкості (напр. 0.25× → 30 с відео = 2 хв)
+  const r = video.playbackRate || 1;
+  $("time").textContent = `${fmt(video.currentTime / r)} / ${fmt(d / r)}`;
+}
+(function loop() {
+  if (!video.paused && !video.ended) drawFrame();
+  updateSeek();
+  requestAnimationFrame(loop);
+})();
+video.addEventListener("seeked", drawFrame);
+window.addEventListener("resize", () => { sizeCanvas(); drawFrame(); });
+seek.addEventListener("input", () => {
+  if (video.duration) video.currentTime = (seek.value / 1000) * video.duration;
+});
+$("toggle-btn").onclick = async () => {
+  if (video.paused) { await Tone.start(); if (player && !player.timer) player.start(); video.play(); } else video.pause();
+};
+
 let loadToken = 0;
 
 async function loadScore() {
@@ -62,17 +107,12 @@ async function selectVideo(v, button) {
   button.setAttribute("aria-pressed", "true");
   current = v;
   video.pause();
-  video.style.objectViewBox = "";
+  currentCrop = v.crop || null;
   if (v.has_local_video) video.src = `/media/${v.local_video}`;
   else if (v.video_url) video.src = v.video_url;
   else video.removeAttribute("src");
-  // показуємо лише регіон, який озвучуємо (crop). object-view-box: Chrome/Edge; в інших браузерах — увесь кадр
-  video.onloadedmetadata = () => {
-    if (!v.crop || !video.videoWidth) return;
-    const [x, y, w, h] = v.crop, W = video.videoWidth, H = video.videoHeight;
-    const pct = (a, b) => `${((a / b) * 100).toFixed(2)}%`;
-    video.style.objectViewBox = `inset(${pct(y, H)} ${pct(W - x - w, W)} ${pct(H - y - h, H)} ${pct(x, W)})`;
-  };
+  video.onloadedmetadata = () => { sizeCanvas(); drawFrame(); };
+  video.onloadeddata = drawFrame;
   presetSel.value = v.preset;
   await loadScore();
 }

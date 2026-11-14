@@ -21,7 +21,17 @@
 
     <section aria-labelledby="player-title">
       <h2 id="player-title">Плеєр</h2>
-      <video id="video" controls muted playsinline></video>
+      <!-- Відео не показуємо напряму: кожен кадр копіюється на canvas, і лише обраний регіон (crop).
+           Так обрізка працює в усіх браузерах (CSS object-view-box є лише в Chromium). -->
+      <div class="screen">
+        <canvas id="view" role="img" aria-label="Відео NASA: обраний регіон"></canvas>
+        <video id="video" muted playsinline preload="auto"></video>
+      </div>
+      <div class="seek">
+        <button id="toggle-btn" type="button" aria-label="Пауза або відтворення">⏯</button>
+        <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Позиція у відео">
+        <span id="time" class="time">0:00 / 0:00</span>
+      </div>
       <p id="video-note" class="note"></p>
       <div class="controls">
         <button id="play-btn" type="button">▶ Грати зі звуком</button>

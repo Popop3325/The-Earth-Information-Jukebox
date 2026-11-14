@@ -40,3 +40,12 @@ a { color: var(--accent); }
 .mixer { margin: 12px 0 0; border: 1px solid #2a3354; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .mixer label { cursor: pointer; }
 @media (max-width: 560px) { .explain-rows li { grid-template-columns: 1.6em 1fr; } .explain-rows .sound { grid-column: 2; } }
+
+/* Відео на canvas (обрізка регіону в усіх браузерах) */
+.screen { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+.screen canvas { display: block; width: 100%; height: auto; }
+.screen video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.seek { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 6px; }
+.seek input[type=range] { width: 100%; }
+.seek button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--muted); background: var(--card); color: var(--fg); cursor: pointer; }
+.time { font-variant-numeric: tabular-nums; color: var(--muted); }
