@@ -36,7 +36,16 @@ VIDEO_EXTS = (".mp4", ".webm", ".mov")
 
 
 def raw_path(video_id: str) -> Path:
-    """data/raw/<id>.mp4|.webm|.mov — перший, що існує (інакше шлях до .mp4)."""
+    """data/raw/<id>.mp4|.webm|.mov — перший, що існує (інакше шлях до .mp4).
+
+    Якщо в каталозі є "raw_file" (одне відео на кілька регіонів, напр. ndvi_global.mp4) — беремо його.
+    """
+    try:
+        shared = get_video(video_id).get("raw_file")
+    except KeyError:
+        shared = None
+    if shared:
+        return RAW_DIR / shared
     for ext in VIDEO_EXTS:
         p = RAW_DIR / f"{video_id}{ext}"
         if p.exists():

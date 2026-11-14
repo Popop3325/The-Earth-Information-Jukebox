@@ -38,9 +38,17 @@ async function selectVideo(v, button) {
   button.setAttribute("aria-pressed", "true");
   current = v;
   video.pause();
+  video.style.objectViewBox = "";
   if (v.has_local_video) video.src = `/media/${v.local_video}`;
   else if (v.video_url) video.src = v.video_url;
   else video.removeAttribute("src");
+  // показуємо лише регіон, який озвучуємо (crop). object-view-box: Chrome/Edge; в інших браузерах — увесь кадр
+  video.onloadedmetadata = () => {
+    if (!v.crop || !video.videoWidth) return;
+    const [x, y, w, h] = v.crop, W = video.videoWidth, H = video.videoHeight;
+    const pct = (a, b) => `${((a / b) * 100).toFixed(2)}%`;
+    video.style.objectViewBox = `inset(${pct(y, H)} ${pct(W - x - w, W)} ${pct(H - y - h, H)} ${pct(x, W)})`;
+  };
   presetSel.value = v.preset;
   await loadScore();
 }

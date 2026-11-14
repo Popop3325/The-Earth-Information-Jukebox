@@ -28,12 +28,41 @@ def smooth(df: pd.DataFrame, cols: list[str], alpha: float) -> pd.DataFrame:
     return out
 
 
+def load_timeline(cfg: dict, fps: float) -> dict | None:
+    """Дати кадрів з файлу (рядок i = дата кадру i), напр. data/sources/ndvi_dates.txt."""
+    tl = cfg.get("timeline")
+    if not tl:
+        return None
+    lines = (ROOT / tl["dates_file"]).read_text(encoding="utf-8").splitlines()
+    dates = [datetime.strptime(s.strip(), tl.get("format", "%b %d, %Y")).date() for s in lines if s.strip()]
+    return {"dates": dates, "fps": fps}
+
+
+def auto_keyframes(timeline: dict, every: str) -> list[dict]:
+    """Ключові кадри з дат: 'monthly' — 1-ше число кожного місяця, 'quarterly' — січ/квіт/лип/жовт."""
+    months = {"monthly": range(1, 13), "quarterly": (1, 4, 7, 10)}[every]
+    out, seen = [], set()
+    for i, d in enumerate(timeline["dates"]):
+        key = (d.year, d.month)
+        if d.month in months and key not in seen:
+            seen.add(key)
+            out.append({"label": d.strftime("%b %Y"), "t": round(i / timeline["fps"], 3)})
+    return out
+
+
 def process(video_path: str, cfg: dict, sample_fps: float, alpha: float) -> dict:
     extractors = [EXTRACTORS[name] for name in cfg["extractors"]]
     names = [n for feats, _ in extractors for n in feats]
+    fps = video_info(video_path).fps
+    timeline = load_timeline(cfg, fps)
+    end_t = cfg.get("end_t")
+    if timeline and end_t is None:  # кадри після останньої дати — стоп-кадр, не рахуємо
+        end_t = (len(timeline["dates"]) - 1) / fps
 
-    rows, state = [], {}
+    rows, state = [], {"cfg": cfg}
     for t, frame, mask in iter_frames(video_path, sample_fps, crop=cfg["crop"], exclude=cfg["exclude"]):
+        if end_t is not None and t > end_t + 1e-6:
+            break
         row = {"t": round(t, 3)}
         for _, fn in extractors:
             row.update(fn(frame, mask, state))
@@ -47,7 +76,10 @@ def process(video_path: str, cfg: dict, sample_fps: float, alpha: float) -> dict
 
     # Ключові кадри (роки тощо): метрики беремо БЕЗ згладжування, з найближчого семплу
     keyframes = []
-    for kf in cfg["keyframes"]:
+    kf_cfg = cfg["keyframes"]
+    if isinstance(kf_cfg, str):  # "monthly" / "quarterly" — з дат таймлайну
+        kf_cfg = auto_keyframes(timeline, kf_cfg) if timeline else []
+    for kf in kf_cfg:
         i = int((raw["t"] - kf["t"]).abs().idxmin())
         metrics = {k: round(float(raw.at[i, k]), 4) for k in names}
         keyframes.append({"label": str(kf["label"]), "t": kf["t"], "metrics": metrics})
@@ -55,11 +87,17 @@ def process(video_path: str, cfg: dict, sample_fps: float, alpha: float) -> dict
     return {
         "schema_version": SCHEMA_VERSION,
         "video_id": cfg["id"],
-        "source_fps": round(video_info(video_path).fps, 3),
+        "source_fps": round(fps, 3),
         "sample_fps": sample_fps,
         "duration_s": round(rows[-1]["t"] + 1 / sample_fps, 3),
         "features": names,
         "keyframes": keyframes,
+        # дата кадру: start + round(t * days_per_second) днів (для UI та озвучки)
+        "timeline": {
+            "start": timeline["dates"][0].isoformat(),
+            "end": timeline["dates"][-1].isoformat(),
+            "days_per_second": fps,
+        } if timeline else None,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "frames": df.to_dict(orient="records"),
     }
@@ -74,7 +112,7 @@ def run(video_id: str, video: str | None = None, sample_fps: float | None = None
     out.write_text(json.dumps(result, ensure_ascii=False))
     print(f"✓ {video_id}: {len(result['frames'])} семплів, {len(result['keyframes'])} ключових кадрів → {out.relative_to(ROOT)}")
     for kf in result["keyframes"]:
-        short = ", ".join(f"{k}={v:.3f}" for k, v in kf["metrics"].items() if k in ("green", "built", "water", "brightness"))
+        short = ", ".join(f"{k}={v:.3f}" for k, v in kf["metrics"].items() if k in ("green", "built", "water", "brightness", "ndvi_mean", "snow_share"))
         print(f"   {kf['label']:>6} @ {kf['t']:5.2f}s  {short}")
     return result
 
