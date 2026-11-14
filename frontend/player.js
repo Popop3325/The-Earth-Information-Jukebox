@@ -122,6 +122,7 @@ export class ScorePlayer {
     this.onTick = null; // (t, player) => {} — для UI
     this.nodes = [];    // усе, що треба dispose()
     this.muted = new Set(); // id шарів і голосів (voice), які вимкнув користувач
+    this.volume = new Map(); // id → множник гучності 0..1 (мікшер); за замовчуванням 1
 
     this.master = new Tone.Volume(-4);
     this.reverb = new Tone.Reverb({ decay: 3, wet: 0.25 });
@@ -152,6 +153,11 @@ export class ScorePlayer {
   }
 
   /** Вимкнути/увімкнути шари й голоси за id (напр. ["air"], ["bells"], ["pad", "drone_D", "drone_F"]) */
+  /** Гучність шарів/голосів за id (мікшер): 0..1, множиться на криву з партитури */
+  setVolume(ids, v) {
+    for (const id of ids) this.volume.set(id, Math.min(1, Math.max(0, v)));
+  }
+
   setMuted(ids, muted) {
     for (const id of ids) muted ? this.muted.add(id) : this.muted.delete(id);
   }
@@ -317,7 +323,7 @@ export class ScorePlayer {
     const t = this.getTime();
     for (const l of this.layers) {
       const off = this.muted.has(l.id);
-      l.node.gain.rampTo(off ? 0 : curveAt(l.points, t), 0.1);
+      l.node.gain.rampTo(off ? 0 : curveAt(l.points, t) * (this.volume.get(l.id) ?? 1), 0.1);
       if (off) l.synth?.mute();
       else l.synth?.setParams(l.params, t);
     }
@@ -330,8 +336,10 @@ export class ScorePlayer {
     }
     const rate = Math.max(this.getRate() || 1, 0.05);
     while (this.nextEvent < events.length && events[this.nextEvent].t <= t) {
-      const e = events[this.nextEvent++];
-      if (this.muted.has(e.voice)) continue;
+      let e = events[this.nextEvent++];
+      const vol = this.volume.get(e.voice) ?? 1;
+      if (this.muted.has(e.voice) || vol <= 0.001) continue;
+      if (vol < 1) e = { ...e, vel: (e.vel ?? 0.5) * vol };
       const dur = e.dur / rate; // тривалість у секундах відео → реальні секунди
       switch (e.instrument) {
         case "tuned_bell": this.tunedBell(e); break;        // ring — уже в реальних секундах

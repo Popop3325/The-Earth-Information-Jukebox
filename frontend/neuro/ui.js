@@ -1,14 +1,19 @@
-// ІНТЕРФЕЙС ГРИ: лише те, як усе виглядає й анімується. Правил гри тут немає.
-// Візуал узято з prototype/index.html (зоряне небо, нейрони-хмарки, зв'язки, іскри, розмиття відео).
-// Клики викликають колбеки, передані в UI.init(): так UI не імпортує game.js (без циклів).
+// ІНТЕРФЕЙС: лише те, як усе виглядає й анімується. Правил гри тут немає (вони в main.js).
+// Основа — ui.js з архіву команди (scroll-історія: нейрони → планета → орбіта → стрічка часу).
+// Зміни: будь-яка кількість нейронів (setNodes), замок/розмиття на canvas з регіоном, без 3D-моделі.
+// Клики викликають колбеки, передані в UI.init(): так UI не імпортує main.js (без циклів).
 const $ = (id) => document.getElementById(id);
 
 let g, W, H, DPR = 1, el = {}, handlers = {}, introMode = true, storyProgress = 0;
 let nodes = [], links = [], sparks = [], pair = null, qOn = false, voiceOn = true, bellTimer = 0, playingNode = null, landingAt = 0;
 const mouse = { x: -999, y: -999 };
 const stars = Array.from({ length: 150 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.2 + 0.2, s: Math.random() * 2 + 0.5 }));
-const introPositions = [[0.29,0.45],[0.39,0.34],[0.51,0.46],[0.63,0.35],[0.73,0.49],[0.58,0.63]];
-const introLinks = [[0,1],[1,2],[2,3],[3,4],[2,5],[4,5]].map(([a,b]) => ({ a,b,p:1 }));
+const BASE_INTRO = [[0.29,0.45],[0.39,0.34],[0.51,0.46],[0.63,0.35],[0.73,0.49],[0.58,0.63]];
+// Для n ≤ 6 — позиції з дизайну; більше — «сітка нейронів» по еліпсу з легким розкидом
+const introPos = (i, n) => n <= BASE_INTRO.length ? BASE_INTRO[i]
+  : [0.5 + Math.cos(-Math.PI / 2 + 2 * Math.PI * i / n) * (0.24 + 0.04 * (i % 3)),
+     0.47 + Math.sin(-Math.PI / 2 + 2 * Math.PI * i / n) * (0.17 + 0.03 * ((i + 1) % 2))];
+let introLinks = [];
 let orbitLinks = [];
 
 function resize() {
@@ -143,7 +148,7 @@ export const UI = {
   /** labels: підписи нейронів; onPick(i) / onListen(i) / onBell() / onVoiceToggle: колбеки гри */
   init(labels, cb) {
     handlers = cb;
-    el = { sky: $("sky"), stage: document.querySelector(".neuron-stage"), video: $("video"), overlay: $("screen-overlay"), text: $("overlay-text"), btn: $("overlay-btn"),
+    el = { sky: $("sky"), stage: document.querySelector(".neuron-stage"), video: $("video"), view: $("view"), overlay: $("screen-overlay"), text: $("overlay-text"), btn: $("overlay-btn"),
       caption: $("caption"), bellBox: $("bell-box"), bellIcon: $("bell-icon"), q: $("q-float"), box: $("nodes"),
       live: $("announce"), hint: $("hint"), voice: $("voice-toggle"), score: $("score") };
     g = el.sky.getContext("2d"); resize();
@@ -191,10 +196,18 @@ export const UI = {
       enabled.addEventListener("change", update);
       update();
     });
+    UI.setNodes(labels);
+    requestAnimationFrame(frame);
+  },
+
+  /** Перебудувати нейрони під новий регіон (інша кількість періодів) */
+  setNodes(labels) {
+    el.box.innerHTML = ""; links = []; pair = null; qOn = false; playingNode = null;
+    const n = labels.length;
     nodes = labels.map((p, i) => {
-      const [bx, by] = nodePos(i, labels.length), [ix, iy] = introPositions[i] || [0.5,0.5];
-      const n = { i, bx, by, ix, iy, x: W * ix, y: H * iy, glow: 0, bad: 0,
-        cloud: Array.from({ length: 50 }, () => ({ a: Math.random() * Math.PI * 2, r: Math.pow(Math.random(), 0.6) * 35, s: Math.random() * 0.8 + 0.2 })) };
+      const [bx, by] = nodePos(i, n), [ix, iy] = introPos(i, n);
+      const node = { i, bx, by, ix, iy, x: W * ix, y: H * iy, glow: 0, bad: 0,
+        cloud: Array.from({ length: 50 }, () => ({ a: Math.random() * Math.PI * 2, r: Math.pow(Math.random(), 0.6) * (n > 8 ? 26 : 35), s: Math.random() * 0.8 + 0.2 })) };
       const wrap = document.createElement("div"); wrap.className = "node-wrap";
       const hit = document.createElement("button"); hit.type = "button"; hit.className = "node-hitbox";
       hit.setAttribute("aria-label", "Прослухати: " + p);
@@ -204,10 +217,10 @@ export const UI = {
         if (qOn && pair && (i === pair[0] || i === pair[1])) handlers.onPick(i);
         else handlers.onListen(i);
       };
-      ui.append(lbl); wrap.append(hit, ui); el.box.appendChild(wrap); n.el = wrap; n.hit = hit; n.label = p; return n;
+      ui.append(lbl); wrap.append(hit, ui); el.box.appendChild(wrap); node.el = wrap; node.hit = hit; node.label = p; return node;
     });
-    orbitLinks = nodes.map((_, i) => ({ a:i, b:(i + 1) % nodes.length, p:1 }));
-    requestAnimationFrame(frame);
+    orbitLinks = nodes.map((_, i) => ({ a:i, b:(i + 1) % n, p:1 }));
+    introLinks = nodes.map((_, i) => ({ a:i, b:(i + (i % 2 ? 2 : 1)) % n, p:1 })).filter((l) => l.a !== l.b);
   },
 
   animateIntro() {
@@ -258,11 +271,12 @@ export const UI = {
   },
 
   unlockScreen(caption) {
-    el.overlay.classList.add("hidden"); el.video.classList.remove("locked");
+    el.overlay.classList.add("hidden"); (el.view || el.video).classList.remove("locked");
     el.caption.textContent = caption; el.caption.classList.add("visible");
     UI.hideQuestion(); UI.showBell(false);
   },
-  lockScreen() { el.video.classList.add("locked"); el.caption.classList.remove("visible"); },
+  lockScreen() { (el.view || el.video).classList.add("locked"); el.caption.classList.remove("visible"); },
+  setCaption(text) { el.caption.textContent = text; el.caption.classList.toggle("visible", !!text); },
   showBell(on) { el.bellBox.classList.toggle("hidden", !on); },
   ringBell() {
     clearTimeout(bellTimer); el.bellIcon.classList.remove("ringing"); void el.bellIcon.offsetWidth;

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Earth Information Jukebox</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/neuro/neuro.css">
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body class="game-page">
+  <!-- Дизайн: архів команди (scroll-історія). Логіка: /static/neuro/main.js. Попередній джукбокс: /static/classic.html -->
+  <button id="skip-intro" class="skip-intro" type="button">Пропустити вступ ↓</button>
+
+  <div class="story-track" id="story-track">
+    <div class="story-sticky">
+      <div class="game-shell intro-mode" id="game-shell">
+        <header class="game-header">
+          <label class="region-pick">Регіон <select id="region-select" aria-label="Оберіть регіон"></select></label>
+          <div class="header-tools">
+            <details class="mixer">
+              <summary aria-label="Налаштувати гучність звуків">♫ <span>Звук</span></summary>
+              <div class="mixer-panel" aria-label="Гучність звуків">
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="wind" checked> Вітер</span><input type="range" min="0" max="100" value="100" data-track-volume="wind" aria-label="Гучність вітру"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="chimes" checked> Дзвіночки</span><input type="range" min="0" max="100" value="100" data-track-volume="chimes" aria-label="Гучність дзвіночків"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="birds" checked> Птахи</span><input type="range" min="0" max="100" value="100" data-track-volume="birds" aria-label="Гучність птахів"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="music" checked> Музика</span><input type="range" min="0" max="100" value="100" data-track-volume="music" aria-label="Гучність музики: мелодія, фон, капель, дерево"><output>100%</output></label>
+              </div>
+            </details>
+            <button id="voice-toggle" class="icon-button" type="button" aria-label="Вимкнути озвучення">🔊</button>
+          </div>
+        </header>
+
+        <main>
+          <section id="screen" aria-label="Супутникова візуалізація рослинності (NASA NDVI)">
+            <video id="video" muted playsinline preload="auto"></video>
+            <canvas id="view" class="locked" role="img" aria-label="Відео NASA: обраний регіон"></canvas>
+            <div id="screen-overlay">
+              <p id="overlay-text">Зміни Землі — у звуці</p>
+              <button id="overlay-btn" class="start-button" type="button" style="display:none;"></button>
+            </div>
+            <div id="caption" aria-hidden="true"></div>
+            <span class="map-tag" id="map-tag">NASA · NDVI</span>
+          </section>
+
+          <section class="neuron-stage" aria-label="Часова лінія: періоди-нейрони">
+            <canvas id="sky" aria-hidden="true"></canvas>
+            <div id="q-float" class="hidden"></div>
+            <div id="nodes" aria-label="Періоди. Оберіть відповідь або прослухайте період"></div>
+          </section>
+
+          <footer class="game-footer">
+            <button id="bell-box" class="bell-button hidden" type="button" aria-label="Ехо: прослухати відрізок без відповіді">
+              <span id="bell-icon">🔔</span><span>Ехо</span><kbd>Space</kbd>
+            </button>
+            <p id="hint" aria-live="polite"></p>
+            <p id="score" class="note"></p>
+          </footer>
+        </main>
+      </div>
+
+      <section class="planet-title" id="planet-title" aria-label="The Earth Information Jukebox">
+        <div class="earth-orb" id="earth-orb" aria-hidden="true">
+          <div class="earth-texture"></div>
+          <div class="earth-clouds"></div>
+        </div>
+        <p class="eyebrow">NASA SPACE APPS CHALLENGE</p>
+        <h1>The Earth<br>Information Jukebox</h1>
+        <p class="planet-copy">Планета звучить. Прислухайся до її змін.</p>
+        <span class="scroll-cue">ПРОКРУТІТЬ, ЩОБ ДОСЛІДЖУВАТИ <b>↓</b></span>
+      </section>
+    </div>
+  </div>
+
+  <div id="announce" class="sr-only" role="status" aria-live="polite"></div>
+  <script type="module" src="/static/neuro/main.js"></script>
+</body>
+</html>
