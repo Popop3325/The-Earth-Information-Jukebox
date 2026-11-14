@@ -89,7 +89,9 @@ def get_presets() -> list[str]:
 def get_score(video_id: str, preset: str | None = None) -> dict:
     """Партитура для плеєра. ?preset=ocean — послухати з іншим пресетом."""
     cfg = _video_or_404(video_id)
-    return build_score(_features(video_id), preset or cfg["preset"])
+    name = preset or cfg["preset"]
+    overrides = cfg.get("preset_overrides") if name == cfg["preset"] else None
+    return build_score(_features(video_id), name, overrides=overrides)
 
 
 @app.get("/api/quiz/{video_id}")

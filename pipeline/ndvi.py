@@ -99,17 +99,24 @@ def compute_ndvi(frame_bgr: np.ndarray, mask: np.ndarray, state: dict) -> dict:
         state["geo_shape"] = frame_bgr.shape[:2]
         state["lat"], state["lon"] = _geo_grid(frame_bgr.shape[:2], geo)
         state["ndvi_hist"] = deque(maxlen=10)
-    lat, lon = state["lat"], state["lon"]
+        # Вага пікселя = його реальна площа. У рівнопроміжній проекції піксель на широті φ
+        # покриває cos(φ) від площі на екваторі (Канада, Сибір «роздуті»). Для великих регіонів
+        # (весь світ) вмикаємо "area_weighted": true у geo; інакше всі ваги = 1.
+        state["w"] = (np.cos(np.radians(state["lat"])).clip(0, 1).astype(np.float32)
+                      if geo.get("area_weighted") else np.ones(frame_bgr.shape[:2], np.float32))
+    lat, lon, W = state["lat"], state["lon"], state["w"]
 
     ndvi, valid, snow = ndvi_map(frame_bgr)
     valid &= mask
     snow &= mask
-    v = ndvi[valid]
-    n = max(v.size, 1)
+    v, wv = ndvi[valid], W[valid]
+    wsum = max(float(wv.sum()), 1e-6)
+    wsnow = float(W[snow].sum())
+    wavg = lambda x: float((wv * x).sum() / wsum)        # зважене середнє по суші з рослинністю
 
     def zone_mean(sel):
-        z = ndvi[valid & sel]
-        return float(z.mean()) if z.size > 50 else 0.0
+        z, zw = ndvi[valid & sel], W[valid & sel]
+        return float((z * zw).sum() / zw.sum()) if z.size > 50 else 0.0
 
     # фронт зелені: середній NDVI по кожному рядку (широті)
     row_cnt = valid.sum(axis=1)
@@ -120,11 +127,11 @@ def compute_ndvi(frame_bgr: np.ndarray, mask: np.ndarray, state: dict) -> dict:
     lat_n, lat_s = geo["lat"]
     front_norm = (front - lat_s) / (lat_n - lat_s)
 
-    weights = ndvi * valid
+    weights = ndvi * valid * W
     lon_w, lon_e = geo["lon"]
     centroid = float((weights * lon).sum() / max(weights.sum(), 1e-6))
 
-    mean = float(v.mean()) if v.size else 0.0
+    mean = wavg(v) if v.size else 0.0
     hist = state["ndvi_hist"]
     hist.append(mean)
     if len(hist) == hist.maxlen:   # ≈ місяць при sample_fps=10 (3 дні на семпл)
@@ -135,10 +142,10 @@ def compute_ndvi(frame_bgr: np.ndarray, mask: np.ndarray, state: dict) -> dict:
 
     return {
         "ndvi_mean": mean,
-        "green_share": float((v > 0.6).sum() / n),
-        "bare_share": float((v < 0.25).sum() / n),
-        "snow_share": float(snow.sum() / max(snow.sum() + valid.sum(), 1)),
-        "ndvi_spread": float(np.clip(v.std() * 3, 0, 1)) if v.size else 0.0,
+        "green_share": wavg(v > 0.6) if v.size else 0.0,
+        "bare_share": wavg(v < 0.25) if v.size else 0.0,
+        "snow_share": wsnow / max(wsnow + wsum, 1e-6),
+        "ndvi_spread": float(np.clip(np.sqrt(wavg((v - mean) ** 2)) * 3, 0, 1)) if v.size else 0.0,
         "green_front_lat": float(np.clip(front_norm, 0, 1)),
         "ndvi_centroid_x": float(np.clip((centroid - lon_w) / (lon_e - lon_w), 0, 1)),
         "green_up_rate": float(np.clip(0.5 + delta * 7, 0, 1)),
@@ -146,18 +153,18 @@ def compute_ndvi(frame_bgr: np.ndarray, mask: np.ndarray, state: dict) -> dict:
         "zone_east": zone_mean((lat >= 25) & (lat < 50) & (lon >= -100)),
         "zone_west": zone_mean((lat >= 25) & (lat < 50) & (lon < -100)),
         "zone_south": zone_mean(lat < 25),
-        **color_fracs(v, int(snow.sum())),
+        **color_fracs(v, wv, wsnow),
     }
 
 
-def color_fracs(v: np.ndarray, n_snow: int) -> dict:
-    """Частки «кольорів» від усієї суші (рослинність + сніг)."""
-    total = max(v.size + n_snow, 1)
-    earth = float((v < 0.3).sum() / total)
-    light = float(((v >= 0.3) & (v < 0.6)).sum() / total)
-    deep = float((v >= 0.6).sum() / total)
+def color_fracs(v: np.ndarray, wv: np.ndarray, wsnow: float) -> dict:
+    """Частки «кольорів» від усієї суші (рослинність + сніг), зважені площею."""
+    total = max(float(wv.sum()) + wsnow, 1e-6)
+    earth = float(wv[v < 0.3].sum() / total)
+    light = float(wv[(v >= 0.3) & (v < 0.6)].sum() / total)
+    deep = float(wv[v >= 0.6].sum() / total)
     return {
-        "white_frac": n_snow / total,
+        "white_frac": wsnow / total,
         "earth_frac": earth,
         "lightgreen_frac": light,
         "deepgreen_frac": deep,

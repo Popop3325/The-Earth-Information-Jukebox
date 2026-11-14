@@ -23,7 +23,9 @@ def main() -> None:
     a = p.parse_args()
 
     features = json.loads(features_path(a.id).read_text(encoding="utf-8"))
-    score = build_score(features, a.preset or get_video(a.id)["preset"])
+    cfg = get_video(a.id)
+    name = a.preset or cfg["preset"]
+    score = build_score(features, name, overrides=cfg.get("preset_overrides") if name == cfg["preset"] else None)
     out = DATA / "scores" / f"{a.id}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(score, ensure_ascii=False, indent=1))

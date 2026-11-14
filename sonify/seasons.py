@@ -189,6 +189,6 @@ def compose(features: dict, preset: dict, features_at) -> dict:
         "winter_range": A["winter_range"], "spring_range": A["spring_range"], "autumn_range": A["autumn_range"],
         "chimes_min": CH["min_green"], "chimes_max": CH["max_green"], "chimes_per_bar": CH["per_bar"],
         "season_split": P["season_split"], "melt_range": DR["melt_range"], "melt_lag": lag,
-        "drips_per_bar": DR["per_bar"], "bare_range": A["bare_range"],
+        "drips_per_bar": DR["per_bar"], "bare_range": A["bare_range"], "birds_range": B["green_range"],
     }
     return {"layers": layers, "events": events, "tempo_bpm": P["tempo_bpm"], "playback_rate": rate, "legend": legend}

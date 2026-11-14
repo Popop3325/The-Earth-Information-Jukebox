@@ -68,9 +68,18 @@ def lerp(pair, x: float) -> float:
 
 
 # ---------- головна функція ----------
-def build_score(features: dict, preset_name: str = "default", seed: int = 42) -> dict:
+def deep_merge(base: dict, over: dict | None) -> dict:
+    """Копія base, у яку вкладено значення з over (рекурсивно для словників)."""
+    out = dict(base)
+    for k, v in (over or {}).items():
+        out[k] = deep_merge(base[k], v) if isinstance(v, dict) and isinstance(base.get(k), dict) else v
+    return out
+
+
+def build_score(features: dict, preset_name: str = "default", seed: int = 42, overrides: dict | None = None) -> dict:
+    """overrides — пороги конкретного регіону поверх пресету (catalog.json → "preset_overrides")."""
     presets = load_presets()
-    preset = presets.get(preset_name) or presets["default"]
+    preset = deep_merge(presets.get(preset_name) or presets["default"], overrides if preset_name in presets else None)
     frames, names = features["frames"], features["features"]
     duration = features["duration_s"]
     rng = random.Random(seed)  # детерміновано: однакові дані → однакова музика

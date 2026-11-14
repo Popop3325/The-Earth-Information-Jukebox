@@ -48,6 +48,112 @@
         "grows_with_metric": true,
         "min_diff": 0.05
       }
+    },
+    {
+      "id": "ndvi_world",
+      "title": "Vegetation of the whole Earth (NDVI), Dec 2023 – Jun 2026",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "geo": {
+        "lon": [
+          -180,
+          180
+        ],
+        "lat": [
+          90,
+          -60
+        ],
+        "area_weighted": true
+      },
+      "_crop_note": "уся карта без Антарктиди (південніше 60° пд. ш.); Гренландія виключена — вічний лід, не сезон",
+      "crop": [
+        0,
+        0,
+        4096,
+        1707
+      ],
+      "exclude": [
+        [
+          1217,
+          68,
+          694,
+          273
+        ]
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      },
+      "preset_overrides": {
+        "_comment": "Пороги під дані всього світу (сніг 0–25%, гола земля 23–39% через пустелі, зелень 40–77%, сезонні зміни слабші — півкулі частково гасять одна одну)",
+        "tonic_range": [
+          0.45,
+          0.7
+        ],
+        "season_split": 0.55,
+        "air": {
+          "winter_range": [
+            0.03,
+            0.2
+          ],
+          "intensity_range": [
+            0.03,
+            0.25
+          ],
+          "bare_range": [
+            0.3,
+            0.4
+          ],
+          "spring_range": [
+            0.52,
+            0.65
+          ],
+          "autumn_range": [
+            0.48,
+            0.33
+          ]
+        },
+        "birds": {
+          "green_range": [
+            0.45,
+            0.75
+          ]
+        },
+        "chimes": {
+          "min_green": 0.45,
+          "max_green": 0.77,
+          "ndvi_range": [
+            0.4,
+            0.56
+          ]
+        },
+        "drips": {
+          "melt_range": [
+            0.0,
+            0.06
+          ]
+        },
+        "wood": {
+          "earth_range": [
+            0.28,
+            0.36
+          ]
+        }
+      }
     }
   ]
 }

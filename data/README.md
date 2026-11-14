@@ -34,5 +34,9 @@ curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a00550
 | `preset` | пресет звуку з `sonify/presets.json` | `"vegetation"` |
 | `sample_fps` | скільки кадрів на секунду аналізувати | `10` (= кожні 3 дні) |
 | `quiz` | гра: `subject`, `metric`, `grows_with_metric`, `min_diff` | |
+| `geo.area_weighted` | зважувати пікселі площею (cos широти); потрібно для великих регіонів | `true` для світу |
+| `preset_overrides` | пороги звуку для цього регіону поверх пресету (той самий звук, інша чутливість) | див. `ndvi_world` |
+
+**Регіони зараз:** `ndvi_north_america` і `ndvi_world` (уся суша без Антарктиди й Гренландії, зважено площею).
 
 **Як порахувати `crop` для іншого материка:** проекція рівнопроміжна, тому `x = (lon + 180) / 360 × 4096`, `y = (90 − lat) / 180 × 2048`.

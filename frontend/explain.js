@@ -97,7 +97,7 @@ export function setupExplain(score, features, muted, onMute) {
     const winter = nrm(snow, L.winter_range), spring = nrm(up, L.spring_range), autumn = nrm(up, L.autumn_range);
     const melt = Math.max(0, featuresAt(features, Math.max(0, t - lagT)).white_frac - snow);
 
-    set(0, `Сніг ${pct(snow)}`, snow / 0.6,
+    set(0, `Сніг ${pct(snow)}`, snow / (L.winter_range[1] * 1.5),
       winter > 0.8 ? "хуртовина: вітер виє в щілинах" : winter > 0.2 ? `хуртовина слабшає (${pct(winter)})` : "хуртовини немає");
     const season = winter > 0.5 ? "зима" : spring > 0.3 ? "весна: зелень росте" : autumn > 0.3 ? "осінь: зелень спадає" : "літо";
     const wind = winter > 0.5 ? "вітер — хуртовина" : spring > 0.3 ? "дуже легкий теплий вітер" : autumn > 0.3 ? "сухий вітер + дерев'яні клацання" : "теплий вітер";
@@ -107,7 +107,8 @@ export function setupExplain(score, features, muted, onMute) {
     set(2, `Зелень ${pct(green)}`, green, k ? `${k} колокольчик${k === 1 ? "" : k < 5 ? "и" : "ів"} на такт, ${green > 0.6 ? "високо й дзвінко" : "нижче й тихіше"}` : "колокольчики мовчать (зелені < 20%)");
     const drips = Math.round(L.drips_per_bar[1] * nrm(melt, L.melt_range));
     set(3, `Сніг тане: −${pct(melt)} за місяць`, nrm(melt, L.melt_range), drips ? `капель: ${drips} крапель на такт` : "капелі немає");
-    set(4, `Птахи`, (1 - winter) * nrm(green, [0.3, 0.85]), winter > 0.5 ? "мовчать (зима)" : green > 0.6 ? "співають (багато зелені)" : green > 0.35 ? "трохи птахів" : "майже немає");
+    const birds = (1 - winter) * nrm(green, L.birds_range || [0.3, 0.85]);
+    set(4, `Птахи`, birds, winter > 0.5 ? "мовчать (зима)" : birds > 0.6 ? "співають (багато зелені)" : birds > 0.2 ? "трохи птахів" : "майже немає");
     const summer = green >= L.season_split;
     set(5, summer ? "Тональність літа" : "Тональність зими", green, summer ? "фа-мажор, тоніка F (світло)" : "ре-мінор, тоніка D (прохолодно)");
   }
