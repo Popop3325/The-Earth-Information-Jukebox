@@ -121,7 +121,7 @@ async function init() {
   ]);
   state.quiz = quiz;
   const meta = videos.find((v) => v.id === VIDEO_ID);
-  video.src = meta?.has_local_video ? `/media/${VIDEO_ID}.mp4` : meta?.video_url || "";
+  video.src = meta?.has_local_video ? `/media/${meta.local_video}` : meta?.video_url || "";
   state.player = new ScorePlayer(score, {
     getTime: () => state.fixedT ?? video.currentTime,
     getRate: () => video.playbackRate,

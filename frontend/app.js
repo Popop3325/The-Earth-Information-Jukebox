@@ -38,7 +38,7 @@ async function selectVideo(v, button) {
   button.setAttribute("aria-pressed", "true");
   current = v;
   video.pause();
-  if (v.has_local_video) video.src = `/media/${v.id}.mp4`;
+  if (v.has_local_video) video.src = `/media/${v.local_video}`;
   else if (v.video_url) video.src = v.video_url;
   else video.removeAttribute("src");
   presetSel.value = v.preset;

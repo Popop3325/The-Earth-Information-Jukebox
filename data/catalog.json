@@ -22,14 +22,14 @@
       "sample_fps": 10,
       "quiz": { "subject": "birds", "metric": "built", "grows_with_metric": false }
     },
-    { "id": "night_lights", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": null, "preset": "lights" },
-    { "id": "sea_surface_currents", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": null, "preset": "ocean" },
-    { "id": "geos_aerosols", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null },
-    { "id": "air_quality", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": null },
-    { "id": "perpetual_ocean_2", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": null, "preset": "ocean" },
-    { "id": "dyamond_co2", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": null },
-    { "id": "iss_lightning", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": null, "preset": "lightning" },
-    { "id": "atmospheric_river", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": null },
-    { "id": "gedi_forest_height", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": null, "extractors": ["basic", "landcover"] }
+    { "id": "night_lights", "video_note": "32 МБ, кодек H.265: OpenCV читає, але Chrome може не відтворити — для сайту перекодувати в H.264", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005300/a005313/nightlights_flat_series_and_change_wZooms_13_EIC_2160p30_h265.mp4", "preset": "lights" },
+    { "id": "sea_surface_currents", "video_note": "8 МБ", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a003900/a003912/pacificcurrents_1080p30.webm", "preset": "ocean" },
+    { "id": "geos_aerosols", "video_note": "на сторінці SVS немає MP4, лише PNG-кадри", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null },
+    { "id": "air_quality", "video_note": "178 МБ, 3840x1080 (усі варіанти великі)", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005533/EIC_AirQuality_Preview_3840x1080.mp4" },
+    { "id": "perpetual_ocean_2", "video_note": "115 МБ (інші версії 1–5 ГБ)", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005400/a005425/perpetual_ocean2_CLOSE_095_beauty_600m_and_below_1080p30.mp4", "preset": "ocean" },
+    { "id": "dyamond_co2", "video_note": "24 МБ", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005196/dyamondPointCloud_12-4-2023b_dyamond_co2_anim_globe_tilt_1080p30.mp4" },
+    { "id": "iss_lightning", "video_note": "127 МБ (найменший варіант)", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005011/iss_lightning_sphere_07312023.mp4", "preset": "lightning" },
+    { "id": "atmospheric_river", "video_note": "69 МБ", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004900/a004960/atmos_river_HD.webm" },
+    { "id": "gedi_forest_height", "video_note": "є колірна шкала → можна перевести колір у висоту лісу", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a004900/a004950/GEDI_CA_w_colorbar_1080p60.webm", "extractors": ["basic", "landcover"] }
   ]
 }

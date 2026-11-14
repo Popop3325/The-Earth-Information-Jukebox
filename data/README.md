@@ -2,7 +2,7 @@
 
 - `catalog.json`: список відео і налаштування обробки. **Комітимо.**
 - `descriptions.json`: тексти для кожного відео (`short`, `science`, `audio_description`, `how_it_sounds`). **Комітимо.** Заповнює №3.
-- `raw/`: завантажені відео (`<id>.mp4`). **Не комітимо.**
+- `raw/`: завантажені відео (`<id>.mp4` або `<id>.webm`). **Не комітимо.**
 - `features/`: результат `pipeline.run` (`<id>.json`). **Не комітимо**, бо кожен генерує локально.
 - `scores/`, `audio/`: результати `sonify.run` і рендеру. **Не комітимо.**
 
@@ -25,7 +25,7 @@
 
 1. Відкрийте сторінку `svs_page` з `catalog.json` (джерело: [EIC gallery](https://svs.gsfc.nasa.gov/gallery/earth-information-center/)).
 2. У блоці **Download** оберіть MP4 з роздільністю 1080p або нижче. 4K не потрібне.
-3. Збережіть файл як `data/raw/<id>.mp4` і впишіть пряме посилання в `video_url`.
+3. Посилання вже є в `video_url` (див. також `video_note`). Збережіть файл як `data/raw/<id>.mp4` або `<id>.webm` (розширення як в оригіналу).
 4. Порахуйте фічі: `.venv/bin/python -m pipeline.run <id>`
 
 Відео `cancun_landcover.mp4` (з прототипу гри) візьміть у капітана команди.

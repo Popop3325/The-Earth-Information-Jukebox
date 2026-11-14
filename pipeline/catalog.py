@@ -32,7 +32,15 @@ def get_video(video_id: str) -> dict:
     raise KeyError(f"Відео '{video_id}' немає в data/catalog.json")
 
 
+VIDEO_EXTS = (".mp4", ".webm", ".mov")
+
+
 def raw_path(video_id: str) -> Path:
+    """data/raw/<id>.mp4|.webm|.mov — перший, що існує (інакше шлях до .mp4)."""
+    for ext in VIDEO_EXTS:
+        p = RAW_DIR / f"{video_id}{ext}"
+        if p.exists():
+            return p
     return RAW_DIR / f"{video_id}.mp4"
 
 

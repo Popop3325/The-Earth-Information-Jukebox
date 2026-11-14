@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from pipeline.catalog import DATA, RAW_DIR, features_path, get_video, load_catalog
+from pipeline.catalog import DATA, RAW_DIR, features_path, get_video, load_catalog, raw_path
 from sonify import build_score, load_presets
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -65,7 +65,8 @@ def list_videos() -> list[dict]:
             "video_url": v.get("video_url"),
             "preset": v["preset"],
             "has_features": features_path(v["id"]).exists(),
-            "has_local_video": (RAW_DIR / f"{v['id']}.mp4").exists(),
+            "has_local_video": raw_path(v["id"]).exists(),
+            "local_video": raw_path(v["id"]).name if raw_path(v["id"]).exists() else None,
             "has_quiz": len(v["keyframes"]) >= 2,
             "description": descriptions.get(v["id"], {}),
         })
@@ -117,7 +118,7 @@ def get_quiz(video_id: str) -> dict:
             "keyframes": keyframes, "pairs": pairs}
 
 
-# Локальні відео (data/raw/<id>.mp4) для плеєра
+# Локальні відео (data/raw/<id>.mp4|.webm) для плеєра: /media/<local_video>
 app.mount("/media", StaticFiles(directory=RAW_DIR, check_dir=False), name="media")
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
 
