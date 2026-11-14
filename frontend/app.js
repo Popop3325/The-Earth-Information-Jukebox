@@ -1,10 +1,13 @@
-// UI: список відео, плеєр, кнопки. Звук: див. audio.js
-import { Jukebox } from "./audio.js";
+// Джукбокс: список відео → відео + звук з партитури. Звук: player.js
+import { ScorePlayer } from "./player.js";
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
 const statusEl = $("status");
-let jukebox = null;
+const presetSel = $("preset");
+let current = null; // { video meta }
+let player = null;
+let clockStart = 0; // якщо відео немає — звук іде за власним таймером
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -12,47 +15,68 @@ async function getJSON(url) {
   return r.json();
 }
 
+const hasVideo = () => !!video.getAttribute("src");
+const nowT = (score) => (hasVideo() ? video.currentTime : (Tone.now() - clockStart) % score.duration_s);
+
+async function loadScore() {
+  player?.dispose();
+  const preset = presetSel.value ? `?preset=${presetSel.value}` : "";
+  const score = await getJSON(`/api/score/${current.id}${preset}`);
+  player = new ScorePlayer(score, { getTime: () => nowT(score), getRate: () => (hasVideo() ? video.playbackRate : 1) });
+  player.onTick = (t) => {
+    const layers = player.layers.map((l) => `${l.id} ${(player.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
+    statusEl.textContent = `t=${t.toFixed(1)}s · ${score.preset}${layers ? " · " + layers : ""}`;
+  };
+  await player.load();
+  $("video-note").textContent =
+    (score.is_sample ? "⚠ Фічі ще не пораховано, звучать демо-дані. " : "") +
+    (hasVideo() ? "" : "Відео не знайдено: звук іде за таймером. ");
+}
+
 async function selectVideo(v, button) {
   document.querySelectorAll(".video-list button").forEach((b) => b.setAttribute("aria-pressed", "false"));
   button.setAttribute("aria-pressed", "true");
-  jukebox?.stop();
-
-  const [features, mapping] = await Promise.all([getJSON(`/api/features/${v.id}`), getJSON("/api/mapping")]);
-  jukebox = new Jukebox(features, mapping, video, (s) => (statusEl.textContent = s));
-
+  current = v;
+  video.pause();
   if (v.has_local_video) video.src = `/media/${v.id}.mp4`;
   else if (v.video_url) video.src = v.video_url;
   else video.removeAttribute("src");
-
-  $("video-note").textContent =
-    (features.is_sample ? "⚠ Фічі ще не пораховано, звучать демо-дані. " : "") +
-    (video.getAttribute("src") ? "" : "Відео не знайдено: звук іде за таймером. ");
+  presetSel.value = v.preset;
+  await loadScore();
 }
 
 async function init() {
-  const videos = await getJSON("/api/videos");
+  const [videos, presets] = await Promise.all([getJSON("/api/videos"), getJSON("/api/presets")]);
+  presetSel.innerHTML = presets.map((p) => `<option value="${p}">${p}</option>`).join("");
+  presetSel.onchange = () => current && loadScore();
+
   const list = $("video-list");
   for (const v of videos) {
     const li = document.createElement("li");
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-pressed", "false");
-    b.innerHTML = `${v.title}<small>${v.has_features ? "фічі готові" : "демо-фічі"}</small>`;
+    b.innerHTML = `${v.title}<small>${v.has_features ? "дані готові" : "демо-дані"}${v.has_quiz ? " · є гра" : ""}</small>`;
     b.onclick = () => selectVideo(v, b);
     li.append(b);
     list.append(li);
   }
 
   $("play-btn").onclick = async () => {
-    if (!jukebox) return (statusEl.textContent = "Спершу оберіть візуалізацію");
+    if (!player) return (statusEl.textContent = "Спершу оберіть візуалізацію");
     await Tone.start(); // браузер дозволяє звук лише після кліку
-    jukebox.start();
-    if (video.getAttribute("src")) video.play();
+    clockStart = Tone.now();
+    player.start();
+    if (hasVideo()) video.play();
   };
   $("stop-btn").onclick = () => {
-    jukebox?.stop();
+    player?.stop();
     video.pause();
   };
+  // звук іде за відео: пауза/перемотка/кінець
+  video.addEventListener("pause", () => player?.pause());
+  video.addEventListener("play", () => player?.resume());
+  video.addEventListener("ended", () => player?.stop());
 }
 
 init().catch((e) => (statusEl.textContent = "Помилка: " + e.message));

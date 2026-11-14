@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Earth Jukebox score (партитура)",
+  "description": "Результат sonify.build_score(). Віддає GET /api/score/<id>. Програє frontend/player.js. Усі часи в секундах ВІДЕО. Змінювати лише після обговорення (№2 сонифікація, №4 фронт, №5 гра).",
+  "type": "object",
+  "required": ["schema_version", "video_id", "duration_s", "layers", "events", "keyframes"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "video_id": { "type": "string" },
+    "preset": { "type": "string" },
+    "duration_s": { "type": "number" },
+    "tempo_bpm": { "type": "number" },
+    "is_sample": { "type": "boolean" },
+    "layers": {
+      "description": "Зациклені семпли з кривою гучності",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sample", "gain"],
+        "properties": {
+          "id": { "type": "string" },
+          "sample": { "type": "string", "description": "файл у frontend/sounds/, URL: /static/sounds/<sample>" },
+          "loop": { "type": "boolean" },
+          "gain": {
+            "type": "array",
+            "description": "[[t, gain 0..1], ...]; між точками лінійна інтерполяція",
+            "items": { "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }] }
+          }
+        }
+      }
+    },
+    "events": {
+      "description": "Нотні події, відсортовані за t",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["t", "instrument", "notes", "dur", "vel"],
+        "properties": {
+          "t": { "type": "number" },
+          "voice": { "type": "string" },
+          "instrument": { "enum": ["bell", "pluck", "pad", "drum"] },
+          "notes": { "type": "array", "items": { "type": "string" }, "description": "напр. [\"D4\", \"F#4\"]" },
+          "dur": { "type": "number", "description": "тривалість у секундах відео" },
+          "vel": { "type": "number", "minimum": 0, "maximum": 1 },
+          "mode": { "enum": ["major", "minor"] }
+        }
+      }
+    },
+    "keyframes": {
+      "description": "Ключові моменти (роки) з метриками. Використовує гра.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "t", "metrics"],
+        "properties": {
+          "label": { "type": "string" },
+          "t": { "type": "number" },
+          "metrics": { "type": "object", "additionalProperties": { "type": "number" } }
+        }
+      }
+    }
+  }
+}

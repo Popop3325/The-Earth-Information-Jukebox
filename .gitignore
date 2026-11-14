@@ -12,6 +12,7 @@ data/frames/
 data/features/*.json
 !data/features/.gitkeep
 data/audio/
+data/scores/
 
 # Середовище / секрети
 .env

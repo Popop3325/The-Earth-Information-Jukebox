@@ -22,3 +22,6 @@ video { width: 100%; background: #000; border-radius: 8px; }
 .controls button { padding: 10px 16px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
 button:focus-visible { outline: 3px solid #ffd54f; outline-offset: 2px; }
 .status { font-family: ui-monospace, monospace; font-size: 14px; color: var(--muted); }
+a { color: var(--accent); }
+.controls { align-items: center; flex-wrap: wrap; }
+.controls select { font: inherit; padding: 8px; border-radius: 8px; background: var(--card); color: var(--fg); border: 1px solid var(--muted); }

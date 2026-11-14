@@ -1,0 +1,99 @@
+{
+  "_comment": "Пресети сонифікації. layers — зациклені семпли, гучність яких іде за фічею. voices — нотні події (синтез у браузері). Значення фічі спершу нормалізується з range [lo, hi] у 0..1 (invert: true — перевертає), потім переводиться в gain/degree/velocity. Звуки лежать у frontend/sounds/.",
+
+  "default": {
+    "tempo_bpm": 84,
+    "root": "C4",
+    "mode": { "feature": "warmth", "threshold": 0.5, "above": "minor", "below": "major", "hold_beats": 8 },
+    "layers": [
+      { "id": "wind", "sample": "wind.m4a", "feature": "motion", "range": [0, 0.5], "gain": [0.05, 0.5] }
+    ],
+    "voices": [
+      {
+        "id": "melody", "instrument": "bell", "every_beats": 0.5,
+        "pitch": { "feature": "brightness", "range": [0.1, 0.7], "degrees": [0, 11] },
+        "velocity": { "feature": "contrast", "range": [0, 1], "value": [0.3, 0.8] },
+        "probability": { "feature": "edge_density", "range": [0, 0.6], "value": [0.3, 0.9] }
+      },
+      {
+        "id": "chord", "instrument": "pad", "every_beats": 4, "chord": true,
+        "pitch": { "feature": "centroid_x", "range": [0, 1], "degrees": [-7, -3] },
+        "velocity": { "feature": "brightness", "range": [0, 1], "value": [0.2, 0.5] }
+      }
+    ]
+  },
+
+  "forest_city": {
+    "_comment": "Канкун: ліс = птахи, місто = вітер. Ловимо 'built', бо 'green' залежить від кольорового балансу знімка.",
+    "tempo_bpm": 72,
+    "root": "D4",
+    "mode": { "feature": "built", "threshold": 0.07, "above": "minor", "below": "major", "hold_beats": 4 },
+    "layers": [
+      { "id": "birds",  "sample": "birds.m4a",  "feature": "built", "range": [0.04, 0.09], "invert": true, "gain": [0.05, 0.95] },
+      { "id": "wind",   "sample": "wind.m4a",   "feature": "built", "range": [0.04, 0.09], "gain": [0.15, 0.9] },
+      { "id": "chimes", "sample": "chimes.m4a", "feature": "built", "range": [0.04, 0.09], "invert": true, "gain": [0.0, 0.6] }
+    ],
+    "voices": [
+      {
+        "id": "bells", "instrument": "bell", "every_beats": 1,
+        "pitch": { "feature": "built", "range": [0.04, 0.09], "invert": true, "degrees": [0, 9] },
+        "velocity": { "feature": "green", "range": [0.4, 0.6], "value": [0.2, 0.6] },
+        "probability": { "feature": "built", "range": [0.04, 0.09], "invert": true, "value": [0.2, 0.8] }
+      }
+    ]
+  },
+
+  "ocean": {
+    "tempo_bpm": 60,
+    "root": "A3",
+    "mode": { "feature": "warmth", "threshold": 0.5, "above": "minor", "below": "major", "hold_beats": 8 },
+    "layers": [
+      { "id": "wind", "sample": "wind.m4a", "feature": "motion", "range": [0, 0.4], "gain": [0.2, 0.8] }
+    ],
+    "voices": [
+      {
+        "id": "waves", "instrument": "pad", "every_beats": 2, "chord": true,
+        "pitch": { "feature": "warmth", "range": [0, 1], "degrees": [0, 7] },
+        "velocity": { "feature": "saturation", "range": [0, 1], "value": [0.2, 0.6] }
+      },
+      {
+        "id": "drops", "instrument": "pluck", "every_beats": 0.5,
+        "pitch": { "feature": "centroid_x", "range": [0, 1], "degrees": [7, 16] },
+        "velocity": { "feature": "motion", "range": [0, 0.4], "value": [0.1, 0.5] },
+        "probability": { "feature": "motion", "range": [0, 0.4], "value": [0.1, 0.6] }
+      }
+    ]
+  },
+
+  "lights": {
+    "tempo_bpm": 96,
+    "root": "E4",
+    "mode": { "feature": "warmth", "threshold": 0.5, "above": "minor", "below": "major", "hold_beats": 8 },
+    "layers": [],
+    "voices": [
+      {
+        "id": "sparkle", "instrument": "bell", "every_beats": 0.25,
+        "pitch": { "feature": "centroid_x", "range": [0, 1], "degrees": [0, 14] },
+        "velocity": { "feature": "brightness", "range": [0, 0.5], "value": [0.2, 0.7] },
+        "probability": { "feature": "active_ratio", "range": [0, 0.5], "value": [0.05, 0.9] }
+      }
+    ]
+  },
+
+  "lightning": {
+    "tempo_bpm": 110,
+    "root": "C3",
+    "mode": { "feature": "warmth", "threshold": 0.5, "above": "minor", "below": "minor", "hold_beats": 8 },
+    "layers": [
+      { "id": "wind", "sample": "wind.m4a", "feature": "brightness", "range": [0, 0.4], "gain": [0.1, 0.5] }
+    ],
+    "voices": [
+      {
+        "id": "thunder", "instrument": "drum", "every_beats": 0.25,
+        "pitch": { "feature": "brightness", "range": [0, 1], "degrees": [-14, -7] },
+        "velocity": { "feature": "active_ratio", "range": [0, 0.3], "value": [0.3, 1] },
+        "probability": { "feature": "active_ratio", "range": [0, 0.3], "value": [0, 0.95] }
+      }
+    ]
+  }
+}

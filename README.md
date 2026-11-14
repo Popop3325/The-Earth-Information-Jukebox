@@ -2,32 +2,38 @@
 
 Проєкт для [NASA Space Apps Challenge 2026: The Earth Information Jukebox](https://www.spaceappschallenge.org/2026/challenges/the-earth-information-jukebox/).
 
-Вебзастосунок, що перетворює візуалізації NASA Earth Information Center (EIC) на звук (сонифікацію).
+Вебзастосунок, що перетворює супутникові візуалізації NASA на звук (сонифікацію), плюс гра, в якій зміни Землі треба **почути**.
 
 ## Як це працює
 
 ```
-[SVS відео] → pipeline/ (Python, OpenCV) → data/features/<id>.json ─┐
-                                                                    ├→ backend/ (FastAPI) → frontend/ (<video> + Tone.js)
-                                 shared/mapping.json ───────────────┘
+відео → pipeline/ (Python, OpenCV, ML) → фічі → sonify/ (Python) → партитура (score)
+                                                                        │
+                                       backend/ (FastAPI) ──────────────┘
+                                                │
+                       frontend/ (джукбокс) і frontend/game/ (гра)
+                       └── frontend/player.js програє партитуру (Tone.js)
 ```
 
-1. **pipeline/**: офлайн, один раз на відео. Бере кадри з частотою `sample_fps` (наприклад, 5 кадрів/с), зменшує їх, рахує фічі (яскравість, «теплота» кольорів, рух…), згладжує й зберігає JSON-«партитуру».
-2. **backend/**: віддає список відео та JSON з фічами, а також роздає фронтенд.
-3. **frontend/**: програє відео й у реальному часі синтезує звук у браузері за фічами та правилами з `shared/mapping.json`.
+1. **pipeline/** аналізує кадри (`sample_fps` на секунду) і рахує фічі: яскравість, рух, частки лісу, міста, води…
+2. **sonify/** за пресетом перетворює фічі на партитуру: шари семплів (птахи, вітер) з кривою гучності і нотні події.
+3. **backend/** віддає каталог, партитури (`/api/score/<id>`) і квіз для гри (`/api/quiz/<id>`).
+4. **frontend/** програє партитуру синхронно з відео. Браузер нічого не вирішує, уся логіка на Python.
 
-Формат даних між частинами описано в [shared/schema/features.schema.json](shared/schema/features.schema.json). Приклад: [shared/examples/sample_features.json](shared/examples/sample_features.json).
+Деталі: [docs/architecture.md](docs/architecture.md). Формати: [features.schema.json](shared/schema/features.schema.json), [score.schema.json](shared/schema/score.schema.json).
 
 ## Структура
 
 | Папка | Що там | Хто |
 |---|---|---|
-| `pipeline/` | витяг кадрів, фічі, ML | ML/backend |
-| `backend/` | FastAPI | ML/backend |
-| `frontend/` | HTML/JS + Tone.js, без збірки | фронтенд, звук |
-| `shared/` | схема фіч і маппінг «фіча → звук» | усі |
-| `data/` | каталог відео (`catalog.json`); самі відео не в git | дані |
-| `docs/` | архітектура, правила роботи з git | усі |
+| `pipeline/` | кадри, фічі, land cover, ML | №1 |
+| `backend/` | FastAPI | №1 |
+| `sonify/` | алгоритм сонифікації, пресети | №2 |
+| `data/` | каталог відео, описи; самі відео не в git | №3 |
+| `frontend/` | джукбокс, `player.js`, звуки | №4 |
+| `frontend/game/` | гра + оригінальний прототип | №5 |
+| `shared/` | схеми даних | усі |
+| `docs/` | архітектура, план команди, задачі | усі |
 
 ## Запуск
 
@@ -39,19 +45,26 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Обробити відео (спершу покладіть файл у `data/raw/`, див. [data/README.md](data/README.md)):
+Порахувати фічі (відео має лежати в `data/raw/<id>.mp4`, див. [data/README.md](data/README.md)):
 
 ```bash
-python -m pipeline.run data/raw/night_lights.mp4 --id night_lights --sample-fps 5
+python -m pipeline.run cancun_landcover
 ```
 
-Запустити сервер (API + фронтенд):
+Подивитися партитуру (необов'язково, сервер генерує її сам):
+
+```bash
+python -m sonify.run cancun_landcover
+```
+
+Запустити сервер:
 
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-Відкрити http://127.0.0.1:8000
+- Джукбокс: http://127.0.0.1:8000
+- Гра: http://127.0.0.1:8000/game
 
 ## Робота в команді
 

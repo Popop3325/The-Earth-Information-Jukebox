@@ -1,0 +1,8 @@
+video { max-height: 40vh; object-fit: cover; }
+.question { font-size: 1.3rem; min-height: 1.6em; }
+.years { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.year { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; background: var(--card); min-width: 120px; }
+.year button { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--muted); background: transparent; color: var(--fg); cursor: pointer; }
+.year .pick { border-color: var(--accent); font-weight: 600; font-size: 1.1rem; }
+.year.done { opacity: 0.5; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

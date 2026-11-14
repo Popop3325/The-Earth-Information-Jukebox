@@ -1,13 +1,35 @@
 {
+  "_comment": "Каталог відео. Поля: id, title, svs_page (джерело), video_url (пряме посилання на MP4), extractors (basic | landcover), crop [x,y,w,h] і exclude [[x,y,w,h],...] у пікселях оригіналу, keyframes [{label, t}], preset (з sonify/presets.json). Детальніше: data/README.md",
   "videos": [
-    { "id": "night_lights", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": null, "description": "" },
-    { "id": "sea_surface_currents", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": null, "description": "" },
-    { "id": "geos_aerosols", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null, "description": "" },
-    { "id": "air_quality", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": null, "description": "" },
-    { "id": "perpetual_ocean_2", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": null, "description": "" },
-    { "id": "dyamond_co2", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": null, "description": "" },
-    { "id": "iss_lightning", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": null, "description": "" },
-    { "id": "atmospheric_river", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": null, "description": "" },
-    { "id": "gedi_forest_height", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": null, "description": "" }
+    {
+      "id": "cancun_landcover",
+      "title": "Cancun, Mexico: forest vs city, 1987–2018",
+      "source": "Landsat time-lapse (запис екрана Google Earth Timelapse). TODO: знайти еквівалент на NASA SVS/EIC або вказати точне джерело",
+      "svs_page": null,
+      "video_url": null,
+      "extractors": ["basic", "landcover"],
+      "crop": [232, 0, 2068, 1170],
+      "exclude": [[2040, 60, 290, 150], [260, 1030, 360, 110]],
+      "keyframes": [
+        { "label": "1987", "t": 0.05 },
+        { "label": "1993", "t": 0.75 },
+        { "label": "1999", "t": 1.47 },
+        { "label": "2004", "t": 1.95 },
+        { "label": "2010", "t": 2.67 },
+        { "label": "2018", "t": 3.65 }
+      ],
+      "preset": "forest_city",
+      "sample_fps": 10,
+      "quiz": { "subject": "birds", "metric": "built", "grows_with_metric": false }
+    },
+    { "id": "night_lights", "title": "Change in Night Lights between 2012 and 2023", "svs_page": "https://svs.gsfc.nasa.gov/5313/", "video_url": null, "preset": "lights" },
+    { "id": "sea_surface_currents", "title": "Global Sea Surface Currents and Temperature", "svs_page": "https://svs.gsfc.nasa.gov/3912/", "video_url": null, "preset": "ocean" },
+    { "id": "geos_aerosols", "title": "GEOS Aerosols", "svs_page": "https://svs.gsfc.nasa.gov/5669/", "video_url": null },
+    { "id": "air_quality", "title": "Air Quality Model Runs", "svs_page": "https://svs.gsfc.nasa.gov/5533/", "video_url": null },
+    { "id": "perpetual_ocean_2", "title": "Perpetual Ocean 2: Western Boundary Currents", "svs_page": "https://svs.gsfc.nasa.gov/5425/", "video_url": null, "preset": "ocean" },
+    { "id": "dyamond_co2", "title": "DYAMOND Global Carbon Dioxide", "svs_page": "https://svs.gsfc.nasa.gov/5196/", "video_url": null },
+    { "id": "iss_lightning", "title": "Lightning Events Detected from the ISS 2017-2023", "svs_page": "https://svs.gsfc.nasa.gov/5011/", "video_url": null, "preset": "lightning" },
+    { "id": "atmospheric_river", "title": "A 3D View of an Atmospheric River", "svs_page": "https://svs.gsfc.nasa.gov/4960/", "video_url": null },
+    { "id": "gedi_forest_height", "title": "GEDI Forest Height", "svs_page": "https://svs.gsfc.nasa.gov/4950/", "video_url": null, "extractors": ["basic", "landcover"] }
   ]
 }

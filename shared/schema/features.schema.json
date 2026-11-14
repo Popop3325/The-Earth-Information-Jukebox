@@ -16,6 +16,19 @@
       "description": "Назви фіч, присутніх у кожному елементі frames. Опис кожної: pipeline/features.py"
     },
     "generated_at": { "type": "string" },
+    "keyframes": {
+      "type": "array",
+      "description": "Ключові моменти з data/catalog.json (роки) з метриками БЕЗ згладжування",
+      "items": {
+        "type": "object",
+        "required": ["label", "t", "metrics"],
+        "properties": {
+          "label": { "type": "string" },
+          "t": { "type": "number" },
+          "metrics": { "type": "object", "additionalProperties": { "type": "number" } }
+        }
+      }
+    },
     "is_sample": { "type": "boolean", "description": "true, якщо це фейкові дані-заглушка" },
     "frames": {
       "type": "array",

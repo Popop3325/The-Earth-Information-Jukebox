@@ -10,7 +10,7 @@
 <body>
   <header>
     <h1>Earth Information Jukebox</h1>
-    <p>Візуалізації NASA, перетворені на звук.</p>
+    <p>Візуалізації NASA, перетворені на звук. <a href="/game">🎮 Гра «Почуй, як змінюється Земля»</a></p>
   </header>
 
   <main>
@@ -26,9 +26,10 @@
       <div class="controls">
         <button id="play-btn" type="button">▶ Грати зі звуком</button>
         <button id="stop-btn" type="button">■ Стоп</button>
+        <label>Звучання: <select id="preset"></select></label>
       </div>
-      <!-- Для скрінрідерів: поточний стан звуку, оголошується без фокусу -->
-      <p id="status" class="status" aria-live="polite"></p>
+      <!-- Технічний статус (оновлюється часто, тому НЕ aria-live, щоб не заважати скрінрідеру) -->
+      <p id="status" class="status"></p>
     </section>
   </main>
 

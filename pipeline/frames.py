@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Sequence
 
 import cv2
 import numpy as np
+
+Rect = Sequence[int]  # (x, y, w, h) у пікселях ОРИГІНАЛЬНОГО відео
 
 
 @dataclass
 class VideoInfo:
     fps: float
     frame_count: int
-    duration_s: float
     width: int
     height: int
 
@@ -21,34 +22,39 @@ def video_info(path: str) -> VideoInfo:
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise FileNotFoundError(f"Не вдалося відкрити відео: {path}")
-    fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    info = VideoInfo(
+        fps=cap.get(cv2.CAP_PROP_FPS) or 30.0,
+        frame_count=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+        width=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        height=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+    )
     cap.release()
-    return VideoInfo(fps=fps, frame_count=n, duration_s=n / fps, width=w, height=h)
+    return info
 
 
 def iter_frames(
     path: str,
     sample_fps: float = 5.0,
     resize_width: int = 480,
-    crop: tuple[int, int, int, int] | None = None,
-) -> Iterator[tuple[float, np.ndarray]]:
-    """Повертає (час_у_секундах, кадр BGR) приблизно sample_fps разів на секунду.
+    crop: Rect | None = None,
+    exclude: Sequence[Rect] = (),
+) -> Iterator[tuple[float, np.ndarray, np.ndarray]]:
+    """Повертає (час_у_секундах, кадр BGR, маска) приблизно sample_fps разів на секунду.
 
-    crop = (x, y, w, h) у пікселях ОРИГІНАЛЬНОГО відео: щоб прибрати легенду чи підписи.
+    crop    — прямокутник з даними (прибрати чорні смуги, легенду знизу тощо);
+    exclude — прямокутники, які НЕ рахуємо (підпис року, логотип, назва місця).
+    маска   — bool-масив розміру кадру: True = піксель враховується.
+    Усі координати — у пікселях оригінального відео.
     """
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise FileNotFoundError(f"Не вдалося відкрити відео: {path}")
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
     step = 1.0 / sample_fps
-    next_t = 0.0
-    idx = 0
+    next_t, idx = 0.0, 0
+    base_mask = None
     while True:
-        ok = cap.grab()  # grab без декодування — швидко пропускаємо зайві кадри
-        if not ok:
+        if not cap.grab():  # grab без декодування — швидко пропускаємо зайві кадри
             break
         t = idx / fps
         idx += 1
@@ -58,11 +64,27 @@ def iter_frames(
         if not ok:
             break
         next_t += step
+
+        if base_mask is None:
+            base_mask = _build_mask(frame.shape[:2], crop, exclude, resize_width)
         if crop:
             x, y, w, h = crop
             frame = frame[y : y + h, x : x + w]
         if resize_width and frame.shape[1] > resize_width:
-            scale = resize_width / frame.shape[1]
-            frame = cv2.resize(frame, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        yield t, frame
+            frame = cv2.resize(frame, base_mask.shape[::-1], interpolation=cv2.INTER_AREA)
+        yield t, frame, base_mask
     cap.release()
+
+
+def _build_mask(shape, crop, exclude, resize_width) -> np.ndarray:
+    mask = np.ones(shape, dtype=np.uint8)
+    for x, y, w, h in exclude:
+        mask[y : y + h, x : x + w] = 0
+    if crop:
+        x, y, w, h = crop
+        mask = mask[y : y + h, x : x + w]
+    if resize_width and mask.shape[1] > resize_width:
+        scale = resize_width / mask.shape[1]
+        size = (resize_width, max(1, round(mask.shape[0] * scale)))
+        mask = cv2.resize(mask, size, interpolation=cv2.INTER_NEAREST)
+    return mask.astype(bool)
