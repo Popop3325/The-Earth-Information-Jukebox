@@ -1,12 +1,11 @@
 # Прототип гри «Леса и Нейроны» (оригінал)
 
-Перший прототип гри, збережений **як є** для довідки. Змінено лише шляхи до звуків (`../../sounds/*.m4a`) і відео (`/media/cancun_landcover.mp4`).
+Перший прототип гри (Канкун, 1987–2018), збережений **як є** для довідки: візуал «нейронів», механіка питань, озвучка. Змінено лише шляхи до звуків (`../../sounds/*.m4a`) і відео (`/media/cancun_landcover.mp4`).
 
-Відкрити: запустіть сервер і перейдіть на http://127.0.0.1:8000/static/game/prototype/index.html. Відео `data/raw/cancun_landcover.mp4` має лежати локально.
+Відкрити: http://127.0.0.1:8000/static/game/prototype/index.html (потрібен локальний файл `data/raw/cancun_landcover.mp4`, візьміть у капітана).
 
-**Що з цього вже перенесено в основний проєкт:**
-- `prepare.py` → `pipeline/landcover.py` (класи зелень/забудова/вода/хмари) + `keyframes` у `data/catalog.json`
-- `data.js` → `GET /api/quiz/cancun_landcover` і `GET /api/score/cancun_landcover`
-- звуки (WAV, 42 МБ) → `frontend/sounds/*.m4a` (1.8 МБ)
+Канкун більше не входить у проєкт: основне відео тепер NDVI Північної Америки (NASA SVS 5544).
+- Звуки прототипу (WAV, 42 МБ) стиснуто в `frontend/sounds/*.m4a` (1.8 МБ) і використовуються в пресеті `vegetation`.
+- Логіка гри перенесена в `frontend/game/game.js` і працює на `GET /api/quiz/ndvi_north_america`.
 
-**Що переносить №5 (гейміфікація):** див. `docs/tasks/5-gamification.md`.
+Що переносить №5: див. `docs/tasks/5-gamification.md`.

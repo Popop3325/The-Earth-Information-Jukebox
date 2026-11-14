@@ -94,11 +94,11 @@ def get_score(video_id: str, preset: str | None = None) -> dict:
 
 @app.get("/api/quiz/{video_id}")
 def get_quiz(video_id: str) -> dict:
-    """Пари сусідніх ключових кадрів для гри «де більше/менше».
+    """Пари ключових кадрів (вперед у часі) для гри «де більше/менше».
 
-    Налаштування в catalog.json, поле "quiz": {subject, metric, grows_with_metric}.
-    Напр. для Канкуна: subject=birds, metric=built, grows_with_metric=false
-    («птахів більше там, де менше забудови»).
+    Налаштування в catalog.json, поле "quiz": {subject, metric, grows_with_metric, min_diff}.
+    min_diff: кадри, що майже не відрізняються від попереднього (різниця < min_diff), пропускаємо,
+    інакше на слух їх не розрізнити (напр. січень і квітень за NDVI майже однакові).
     """
     cfg = _video_or_404(video_id)
     quiz = cfg.get("quiz")
@@ -110,11 +110,14 @@ def get_quiz(video_id: str) -> dict:
         v = kf["metrics"][quiz["metric"]]
         return v if quiz.get("grows_with_metric", True) else -v
 
-    pairs = []
-    for i in range(len(keyframes) - 1):
-        a, b = i, i + 1
+    min_diff = quiz.get("min_diff", 0.0)
+    pairs, a = [], 0
+    for b in range(1, len(keyframes)):
+        if abs(subject_value(keyframes[a]) - subject_value(keyframes[b])) < min_diff:
+            continue
         more = a if subject_value(keyframes[a]) >= subject_value(keyframes[b]) else b
         pairs.append({"a": a, "b": b, "more": more, "less": b if more == a else a})
+        a = b
     return {"video_id": video_id, "subject": quiz["subject"], "metric": quiz["metric"],
             "keyframes": keyframes, "pairs": pairs}
 

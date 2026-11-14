@@ -2,8 +2,8 @@
 
 Backend генерує партитуру «на льоту» сам; цей скрипт потрібен, щоб подивитися результат.
 
-    python -m sonify.run cancun_landcover
-    python -m sonify.run cancun_landcover --preset default
+    python -m sonify.run ndvi_north_america
+    python -m sonify.run ndvi_north_america --preset default
 """
 from __future__ import annotations
 
