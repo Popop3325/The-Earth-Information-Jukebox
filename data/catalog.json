@@ -2,54 +2,6 @@
   "_comment": "Каталог відео. Поки працюємо з ОДНИМ відео: NDVI Північної Америки (SVS 5544). Інший материк = новий запис з тим самим raw_file та іншими crop/geo/exclude. Опис полів: data/README.md",
   "videos": [
     {
-      "id": "ndvi_north_america",
-      "title": "Vegetation of North America (NDVI), Dec 2023 – Jun 2026",
-      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
-      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
-      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
-      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
-      "raw_file": "ndvi_global.mp4",
-      "extractors": [
-        "ndvi"
-      ],
-      "geo": {
-        "lon": [
-          -168,
-          -52
-        ],
-        "lat": [
-          72,
-          14
-        ]
-      },
-      "crop": [
-        137,
-        205,
-        1320,
-        660
-      ],
-      "exclude": [
-        [
-          1195,
-          205,
-          262,
-          160
-        ]
-      ],
-      "timeline": {
-        "dates_file": "data/sources/ndvi_dates.txt"
-      },
-      "keyframes": "quarterly",
-      "preset": "seasons",
-      "sample_fps": 10,
-      "quiz": {
-        "subject": "vegetation",
-        "metric": "ndvi_mean",
-        "grows_with_metric": true,
-        "min_diff": 0.05
-      }
-    },
-    {
       "id": "ndvi_world",
       "title": "Vegetation of the whole Earth (NDVI), Dec 2023 – Jun 2026",
       "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
@@ -153,6 +105,281 @@
             0.36
           ]
         }
+      }
+    },
+    {
+      "id": "ndvi_north_america",
+      "title": "Vegetation of North America (NDVI), Dec 2023 – Jun 2026",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "geo": {
+        "lon": [
+          -168,
+          -52
+        ],
+        "lat": [
+          72,
+          14
+        ]
+      },
+      "crop": [
+        137,
+        205,
+        1320,
+        660
+      ],
+      "exclude": [
+        [
+          1195,
+          205,
+          262,
+          160
+        ]
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.05
+      }
+    },
+    {
+      "id": "ndvi_south_america",
+      "title": "South America (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          -82,
+          -34
+        ],
+        "lat": [
+          13,
+          -56
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        1115,
+        876,
+        546,
+        785
+      ],
+      "exclude": [
+        [
+          1115,
+          876,
+          57,
+          68
+        ]
+      ],
+      "_crop_note": "без Центральної Америки",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      }
+    },
+    {
+      "id": "ndvi_eurasia",
+      "title": "Eurasia (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          -10,
+          180
+        ],
+        "lat": [
+          78,
+          -11
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        1934,
+        137,
+        2162,
+        1012
+      ],
+      "exclude": [
+        [
+          1934,
+          603,
+          501,
+          546
+        ],
+        [
+          2435,
+          887,
+          205,
+          262
+        ],
+        [
+          2435,
+          683,
+          57,
+          204
+        ],
+        [
+          2492,
+          842,
+          45,
+          45
+        ]
+      ],
+      "_crop_note": "без Африки (межа по Червоному морю); Чукотка за 180° не входить",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      }
+    },
+    {
+      "id": "ndvi_africa",
+      "title": "Africa (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          -18,
+          52
+        ],
+        "lat": [
+          38,
+          -35
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        1843,
+        592,
+        797,
+        830
+      ],
+      "exclude": [
+        [
+          2435,
+          592,
+          205,
+          91
+        ],
+        [
+          2492,
+          683,
+          148,
+          159
+        ],
+        [
+          2537,
+          842,
+          103,
+          45
+        ]
+      ],
+      "_crop_note": "без Аравії та Близького Сходу (межа по Червоному морю)",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      }
+    },
+    {
+      "id": "ndvi_australia",
+      "title": "Australia (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          112,
+          155
+        ],
+        "lat": [
+          -10,
+          -44
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        3322,
+        1138,
+        490,
+        387
+      ],
+      "exclude": [],
+      "_crop_note": "лише материкова Австралія й Тасманія",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
       }
     }
   ]

@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from pipeline.catalog import DATA, RAW_DIR, features_path, get_video, load_catalog, raw_path
 from sonify import build_score, load_presets
+from sonify.auto import region_overrides
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
@@ -90,8 +91,9 @@ def get_score(video_id: str, preset: str | None = None) -> dict:
     """Партитура для плеєра. ?preset=ocean — послухати з іншим пресетом."""
     cfg = _video_or_404(video_id)
     name = preset or cfg["preset"]
-    overrides = cfg.get("preset_overrides") if name == cfg["preset"] else None
-    return build_score(_features(video_id), name, overrides=overrides)
+    features = _features(video_id)
+    overrides = region_overrides(cfg, features) if name == cfg["preset"] else None
+    return build_score(features, name, overrides=overrides)
 
 
 @app.get("/api/quiz/{video_id}")
