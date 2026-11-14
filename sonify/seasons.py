@@ -6,7 +6,7 @@
   • Фон: акорди лише з нот гами — Dm7, Csus2, Gsus4, Dm7 (по такту), гучність ~0.25.
   • ≤ 3 помітних потоки: ДЗВОНИ, ПОВІТРЯ, ДУХОВИЙ ГОЛОС (+ тиха підкладка/дрон нижче порогу уваги).
   • Одна змінна не керує всім одразу:
-        повітря   ← earth_frac (сухість: гучність, яскравість) + white_frac (пориви, свист)
+        повітря   ← earth_frac (загальна гучність) + white_frac (хуртовина ↔ теплий вітер, сила хуртовини)
         дзвони    ← green_frac (є/нема, 1 чи 2 удари) + ndvi_mean (висота, довжина дзвону) + white_frac (скло)
         голос     ← ndvi_mean (довжина фраз, регістр, тембр) + green_up_rate (ковзання вгору/вниз)
         тоніка    ← green_frac (D ↔ F)
@@ -56,20 +56,23 @@ def compose(features: dict, preset: dict, features_at) -> dict:
         return [[f["t"], round(fn(f), 4)] for f in frames]
 
     earth_n = lambda f: nrm(f["earth_frac"], *air["earth_range"])
-    white_n = lambda f: nrm(f["white_frac"], *air["white_range"])
     green_n = lambda f: nrm(f["green_frac"], *P["tonic_range"])
+    air_total = lambda f: air["base"] + air["earth_gain"] * earth_n(f)        # формула з дизайну
+    winter_share = lambda f: nrm(f["white_frac"], *air["winter_range"])     # 0 = теплий вітер … 1 = хуртовина
 
     layers = [
+        # ПОВІТРЯ = два шари, що перетікають за часткою снігу (загальна гучність 0.2 + 0.5 × гола земля):
+        #   зима — синтезована хуртовина «Свист у щілинах» (frontend/winds.js, варіант air.winter_variant),
+        #          її сила (intensity) теж росте зі снігом;
+        #   весна/літо — запис м'якого вітру (frontend/sounds/wind_warm.m4a).
         {
-            "id": "air", "synth": {"type": "air", "breath_period_beats": 16, "breath_depth": 0.2},
-            # Формула з дизайну: 0.2 + 0.5 × (частка відкритої землі)
-            "gain": curve(lambda f: air["base"] + air["earth_gain"] * earth_n(f)),
-            "params": {
-                # сухість і сніг відкривають фільтр: земля — середні частоти, сніг — високі
-                "filter_hz": curve(lambda f: lerp(*air["filter_hz"], max(0.55 * earth_n(f), white_n(f)))),
-                "gust": curve(lambda f: white_n(f)),                                   # глибина поривів
-                "whistle": curve(lambda f: lerp(*air["whistle_gain"], nrm(f["white_frac"], *air["whistle_range"]))),
-            },
+            "id": "air_winter", "synth": {"type": "air", "variant": air["winter_variant"]},
+            "gain": curve(lambda f: air_total(f) * winter_share(f)),
+            "params": {"intensity": curve(lambda f: nrm(f["white_frac"], *air["intensity_range"]))},
+        },
+        {
+            "id": "air_warm", "sample": air["warm_sample"], "loop": True, "loop_trim": 0.1,
+            "gain": curve(lambda f: air_total(f) * (1 - winter_share(f)) * air["warm_gain"]),
         },
         # Дрон на тоніці сезону з чутними обертонами (телефон «добудує» бас). Кросфейд D ↔ F.
         {"id": "drone_D", "synth": {"type": "drone", "notes": drone["D"]},

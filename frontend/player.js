@@ -10,9 +10,11 @@
 //   player.pause(); player.resume(); player.stop();
 //
 // Формат партитури: shared/schema/score.schema.json
-//   layers: { sample } — зациклений семпл, або { synth: {type: "air" | "drone"} } — синтезований шар;
-//           gain: [[t, 0..1]], params: { filter_hz, gust, whistle: [[t, v]] } — автоматизація ручок шару.
+//   layers: { sample, loop_trim? } — зациклений семпл, або { synth: {type: "air", variant} | {type: "drone"} };
+//           gain: [[t, 0..1]], params: { intensity: [[t, 0..1]] } — автоматизація ручок шару.
 //   events: інструменти bell, pluck, pad, drum, tuned_bell, wind_voice, ice, wood.
+
+import { WIND_VARIANTS } from "./winds.js";
 
 const SOUNDS = "/static/sounds/";
 
@@ -76,31 +78,17 @@ function makeInstruments(out, track) {
 function makeSynthLayer(spec, node, master, track, beatSec) {
   const keep = (n) => (track.push(n), n);
   if (spec.type === "air") {
-    // Повітря: один шумовий шар. «Дихання» ±20% з періодом 4 такти + пориви (глибина ← сніг) + тонкий свист
-    const period = (spec.breath_period_beats || 16) * beatSec;
-    const noise = keep(new Tone.Noise({ type: "pink", volume: -10 }));
-    const filter = keep(new Tone.Filter({ type: "bandpass", frequency: 1200, Q: 0.6 }));
-    const breath = keep(new Tone.Gain(1));
-    const gust = keep(new Tone.Gain(1));
-    noise.chain(filter, breath, gust, node);
-    const depth = spec.breath_depth ?? 0.2;
-    const breathLfo = keep(new Tone.LFO({ frequency: 1 / period, min: 1 - depth, max: 1 + depth }).connect(breath.gain));
-    const gustLfo = keep(new Tone.LFO({ frequency: 2 / period, min: 0.7, max: 1.3, amplitude: 0 }).connect(gust.gain));
-    // Свист: дуже вузька смуга білого шуму, що повільно «пливе» по висоті
-    const wNoise = keep(new Tone.Noise({ type: "white", volume: -6 }));
-    const wFilter = keep(new Tone.Filter({ type: "bandpass", frequency: 2200, Q: 30 }));
-    const wGain = keep(new Tone.Gain(0));
-    wNoise.chain(wFilter, wGain, master);
-    const wLfo = keep(new Tone.LFO({ frequency: 1 / 9, min: 1800, max: 2600 }).connect(wFilter.frequency));
+    // Повітря = один із варіантів з frontend/winds.js (обирали в лабораторії /static/lab/wind.html).
+    // Ручка intensity (0..1) — «сила» вітру з даних. Пориви й «дихання» всередині варіанту — повільні.
+    const variant = WIND_VARIANTS[spec.variant || "current"] || WIND_VARIANTS.current;
+    const inst = variant.build(node);
+    track.push({ dispose: () => inst.dispose() });
+    let started = false;
     return {
-      start() { [noise, wNoise].forEach((n) => n.state !== "started" && n.start()); [breathLfo, gustLfo, wLfo].forEach((l) => l.state !== "started" && l.start()); },
-      stop() { [noise, wNoise].forEach((n) => n.stop()); },
-      mute() { wGain.gain.rampTo(0, 0.2); },
-      setParams(p, t) {
-        if (p.filter_hz) filter.frequency.rampTo(curveAt(p.filter_hz, t), 0.2);
-        if (p.gust) gustLfo.amplitude.rampTo(curveAt(p.gust, t), 0.5);
-        if (p.whistle) wGain.gain.rampTo(curveAt(p.whistle, t), 0.3);
-      },
+      start() { if (!started) { inst.start(); started = true; } },
+      stop() { inst.stop(); started = false; },
+      mute() {},
+      setParams(p, t) { if (p.intensity) inst.set(curveAt(p.intensity, t)); },
     };
   }
   if (spec.type === "drone") {
@@ -147,7 +135,14 @@ export class ScorePlayer {
       const node = new Tone.Gain(0).connect(this.master);
       let src, synth = null;
       if (l.synth) synth = makeSynthLayer(l.synth, node, this.master, this.nodes, beatSec);
-      else src = new Tone.Player({ url: SOUNDS + l.sample, loop: l.loop !== false }).connect(node);
+      else {
+        src = new Tone.Player({ url: SOUNDS + l.sample, loop: l.loop !== false, fadeIn: 0.5, fadeOut: 0.5 }).connect(node);
+        // AAC має кілька десятків мс тиші на краях — обрізаємо, щоб петля не «гикала»
+        if (l.loop_trim) Tone.loaded().then(() => {
+          src.loopStart = l.loop_trim;
+          src.loopEnd = Math.max(src.buffer.duration - l.loop_trim, l.loop_trim + 1);
+        });
+      }
       return { id: l.id, points: l.gain, params: l.params || {}, node, src, synth };
     });
   }

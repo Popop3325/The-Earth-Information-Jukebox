@@ -30,22 +30,17 @@
         0.07,
         0.35
       ],
-      "white_range": [
+      "winter_range": [
         0.1,
-        0.55
+        0.4
       ],
-      "filter_hz": [
-        500,
-        4500
-      ],
-      "whistle_range": [
-        0.35,
+      "winter_variant": "howl",
+      "intensity_range": [
+        0.1,
         0.6
       ],
-      "whistle_gain": [
-        0.0,
-        0.12
-      ]
+      "warm_sample": "wind_warm.m4a",
+      "warm_gain": 0.9
     },
     "bells": {
       "min_green": 0.2,

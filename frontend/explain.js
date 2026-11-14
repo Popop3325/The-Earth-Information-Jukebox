@@ -7,7 +7,7 @@ const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 /** Групи шарів для вимикачів: назва → id шарів/голосів у партитурі */
 export const GROUPS = [
-  { key: "air", label: "🌬 Повітря", ids: ["air"] },
+  { key: "air", label: "🌬 Повітря", ids: ["air_winter", "air_warm"] },
   { key: "bells", label: "🔔 Дзвони", ids: ["bells"] },
   { key: "wind", label: "🎶 Духовий голос", ids: ["wind"] },
   { key: "bg", label: "🎹 Фон і дрон", ids: ["pad", "drone_D", "drone_F"] },
@@ -94,10 +94,11 @@ export function setupExplain(score, features, muted, onMute) {
     $("explain-date").textContent = dateAt(score.timeline, t);
 
     const snow = f.white_frac, earth = f.earth_frac, green = f.green_frac, ndvi = f.ndvi_mean, up = f.green_up_rate;
+    const winter = Math.min(1, Math.max(0, (snow - 0.1) / 0.3)); // як air.winter_range у пресеті
     set(0, `Сніг ${pct(snow)}`, snow / 0.6,
-      snow > 0.35 ? "хуртовина з поривами і тонким свистом" : snow > 0.1 ? "пориви вітру" : "без хуртовини");
+      winter > 0.8 ? "хуртовина: вітер виє в щілинах" : winter > 0.2 ? `хуртовина ${pct(winter)} + теплий вітер` : "м'який теплий вітер");
     set(1, `Гола земля ${pct(earth)}`, earth / 0.35,
-      `сухий вітер ${earth > 0.2 ? "гучніше" : "тихіше"}; ${earth > L.wood_from && green < 0.5 ? "дерев'яні клацання" : "без клацань"}${snow > L.ice_from ? ", хрускіт льоду" : ""}`);
+      `вітер ${earth > 0.2 ? "гучніше" : "тихіше"}; ${earth > L.wood_from && green < 0.5 ? "дерев'яні клацання" : "без клацань"}${snow > L.ice_from ? ", хрускіт льоду" : ""}`);
     const strikes = green < L.bells_min ? "дзвони мовчать (зелені < 20%)" : green < L.bells_double ? "1 удар дзвону на такт" : "2 удари дзвону на такт";
     set(2, `Зелень ${pct(green)}`, green, strikes + (snow > 0.2 ? ", звук «скляний»" : ", звук теплий"));
     set(3, `NDVI ${ndvi.toFixed(2)}`, (ndvi - 0.25) / 0.42,
