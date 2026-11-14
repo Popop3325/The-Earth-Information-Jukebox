@@ -3,30 +3,103 @@
   "title": "Earth Jukebox score (партитура)",
   "description": "Результат sonify.build_score(). Віддає GET /api/score/<id>. Програє frontend/player.js. Усі часи в секундах ВІДЕО. Змінювати лише після обговорення (№2 сонифікація, №4 фронт, №5 гра).",
   "type": "object",
-  "required": ["schema_version", "video_id", "duration_s", "layers", "events", "keyframes"],
+  "required": [
+    "schema_version",
+    "video_id",
+    "duration_s",
+    "layers",
+    "events",
+    "keyframes"
+  ],
   "properties": {
-    "schema_version": { "const": 1 },
-    "video_id": { "type": "string" },
-    "preset": { "type": "string" },
-    "duration_s": { "type": "number" },
-    "tempo_bpm": { "type": "number" },
-    "is_sample": { "type": "boolean" },
+    "schema_version": {
+      "const": 1
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "preset": {
+      "type": "string"
+    },
+    "duration_s": {
+      "type": "number"
+    },
+    "tempo_bpm": {
+      "type": "number"
+    },
+    "is_sample": {
+      "type": "boolean"
+    },
     "layers": {
-      "description": "Зациклені семпли з кривою гучності",
+      "description": "Шари: зациклений семпл (sample) або синтезований (synth), з кривою гучності та автоматизацією ручок (params)",
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "sample", "gain"],
+        "required": [
+          "id",
+          "gain"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "sample": { "type": "string", "description": "файл у frontend/sounds/, URL: /static/sounds/<sample>" },
-          "loop": { "type": "boolean" },
+          "id": {
+            "type": "string"
+          },
+          "sample": {
+            "type": "string",
+            "description": "файл у frontend/sounds/, URL: /static/sounds/<sample>"
+          },
+          "loop": {
+            "type": "boolean"
+          },
           "gain": {
             "type": "array",
             "description": "[[t, gain 0..1], ...]; між точками лінійна інтерполяція",
-            "items": { "type": "array", "prefixItems": [{ "type": "number" }, { "type": "number" }] }
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "synth": {
+            "type": "object",
+            "description": "{type: 'air'} — шум з диханням/поривами/свистом; {type: 'drone', notes: [...]} — підкладка з обертонами",
+            "properties": {
+              "type": {
+                "enum": [
+                  "air",
+                  "drone"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "params": {
+            "type": "object",
+            "description": "автоматизація ручок: filter_hz, gust (0..1), whistle (0..1) — кожна [[t, v], ...]",
+            "additionalProperties": {
+              "type": "array"
+            }
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "sample"
+            ]
+          },
+          {
+            "required": [
+              "synth"
+            ]
+          }
+        ]
       }
     },
     "events": {
@@ -34,15 +107,77 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["t", "instrument", "notes", "dur", "vel"],
+        "required": [
+          "t",
+          "instrument",
+          "notes",
+          "dur",
+          "vel"
+        ],
         "properties": {
-          "t": { "type": "number" },
-          "voice": { "type": "string" },
-          "instrument": { "enum": ["bell", "pluck", "pad", "drum"] },
-          "notes": { "type": "array", "items": { "type": "string" }, "description": "напр. [\"D4\", \"F#4\"]" },
-          "dur": { "type": "number", "description": "тривалість у секундах відео" },
-          "vel": { "type": "number", "minimum": 0, "maximum": 1 },
-          "mode": { "enum": ["major", "minor"] }
+          "t": {
+            "type": "number"
+          },
+          "voice": {
+            "type": "string"
+          },
+          "instrument": {
+            "enum": [
+              "bell",
+              "pluck",
+              "pad",
+              "drum",
+              "tuned_bell",
+              "wind_voice",
+              "ice",
+              "wood"
+            ]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "напр. [\"D4\", \"F#4\"]"
+          },
+          "dur": {
+            "type": "number",
+            "description": "тривалість у секундах відео (для ice/wood — реальні секунди)"
+          },
+          "vel": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "mode": {
+            "enum": [
+              "major",
+              "minor"
+            ]
+          },
+          "ring": {
+            "type": "number",
+            "description": "tuned_bell: довжина звону, РЕАЛЬНІ секунди"
+          },
+          "tierce": {
+            "type": "number",
+            "description": "tuned_bell: тирс 1.2 (зима) … 1.25 (літо)"
+          },
+          "glass": {
+            "type": "number",
+            "description": "tuned_bell: 0..1 «скляність» (сніг)"
+          },
+          "timbre": {
+            "type": "number",
+            "description": "wind_voice: 0 бас-флейта … 1 кларнет"
+          },
+          "glide_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "wind_voice: нота, з якої ковзає до notes[0]"
+          }
         }
       }
     },
@@ -51,13 +186,37 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["label", "t", "metrics"],
+        "required": [
+          "label",
+          "t",
+          "metrics"
+        ],
         "properties": {
-          "label": { "type": "string" },
-          "t": { "type": "number" },
-          "metrics": { "type": "object", "additionalProperties": { "type": "number" } }
+          "label": {
+            "type": "string"
+          },
+          "t": {
+            "type": "number"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
         }
       }
+    },
+    "playback_rate": {
+      "type": "number",
+      "description": "рекомендована швидкість відео (напр. 0.25), під яку складено сітку tempo_bpm у реальному часі"
+    },
+    "timeline": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "дати кадрів: start, end, days_per_second (з features)"
     }
   }
 }

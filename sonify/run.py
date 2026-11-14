@@ -31,7 +31,7 @@ def main() -> None:
     print(f"✓ {out.relative_to(DATA.parent)}  preset={score['preset']}  {score['duration_s']}s")
     print("  шари:", ", ".join(f"{l['id']} ({l['gain'][0][1]}→{l['gain'][-1][1]})" for l in score["layers"]) or "—")
     print("  події:", dict(Counter(e["voice"] for e in score["events"])))
-    print("  лад:", dict(Counter(e["mode"] for e in score["events"])))
+    print("  лад:", dict(Counter(e.get("mode", "—") for e in score["events"])))
 
 
 if __name__ == "__main__":

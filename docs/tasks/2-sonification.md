@@ -45,3 +45,7 @@
 
 ## Промпт для ШІ
 > Я №2 (алгоритм сонифікації) у проєкті Earth Information Jukebox. Прочитай `README.md`, `docs/architecture.md`, `docs/tasks/2-sonification.md`, увесь `sonify/`, `shared/schema/score.schema.json`, `pipeline/ndvi.py` і `frontend/player.js`. Я трохи знаю музичну теорію, тож пояснюй музичні рішення. Працюй лише в `sonify/`. Почни із задачі 2.
+
+## Оновлення: пресет `seasons` (саунд-дизайн команди)
+Основний пресет тепер `seasons`. Логіка: `sonify/seasons.py`, опис і таблиця зв'язків: [docs/sound-design.md](../sound-design.md). Пресет `vegetation` лишився для порівняння (список «Звучання» на сайті).
+Що далі саме тут: стерео-«вдих/видих» півкуль, кришталеві чаші, подих у духовому голосі, тести детермінованості (`hval`).

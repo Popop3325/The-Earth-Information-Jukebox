@@ -75,6 +75,23 @@ def build_score(features: dict, preset_name: str = "default", seed: int = 42) ->
     duration = features["duration_s"]
     rng = random.Random(seed)  # детерміновано: однакові дані → однакова музика
 
+    # Окремий «композитор» (напр. sonify/seasons.py) замість загального рушія пресетів
+    if preset.get("composer") == "seasons" and all(k in names for k in ("white_frac", "earth_frac", "green_frac")):
+        from .seasons import compose
+        out = compose(features, preset, features_at)
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "video_id": features["video_id"],
+            "preset": preset_name,
+            "duration_s": duration,
+            "keyframes": features.get("keyframes", []),
+            "timeline": features.get("timeline"),
+            "is_sample": bool(features.get("is_sample")),
+            **out,
+        }
+    if preset.get("composer"):  # композитору бракує фіч (напр. демо-дані) → загальний пресет
+        preset, preset_name = presets["default"], "default"
+
     # 1) Шари семплів: гучність у кожній точці семплу
     layers = []
     for spec in preset.get("layers", []):

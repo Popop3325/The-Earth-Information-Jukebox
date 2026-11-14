@@ -35,6 +35,12 @@ NDVI_FEATURES = [
     "zone_east",        # 25–50°, схід від 100° з.д. (ліси сходу США/Канади)
     "zone_west",        # 25–50°, захід від 100° з.д. (прерії, гори, пустелі)
     "zone_south",       # < 25° (Мексика, Центральна Америка)
+    # «Три кольори» суші (разом зі снігом дають 1.0): білий / землистий / світло- і темно-зелений
+    "white_frac",       # сніг і лід
+    "earth_frac",       # землистий: NDVI < 0.3 (оголений ґрунт, суха степ, пустеля, тундра)
+    "lightgreen_frac",  # світло-зелений: 0.3 ≤ NDVI < 0.6 (молода зелень, весна, трави)
+    "deepgreen_frac",   # темно-зелений: NDVI ≥ 0.6 (ліс, пік літа)
+    "green_frac",       # lightgreen + deepgreen: уся жива зелень
 ]
 
 _lut = None
@@ -140,4 +146,20 @@ def compute_ndvi(frame_bgr: np.ndarray, mask: np.ndarray, state: dict) -> dict:
         "zone_east": zone_mean((lat >= 25) & (lat < 50) & (lon >= -100)),
         "zone_west": zone_mean((lat >= 25) & (lat < 50) & (lon < -100)),
         "zone_south": zone_mean(lat < 25),
+        **color_fracs(v, int(snow.sum())),
+    }
+
+
+def color_fracs(v: np.ndarray, n_snow: int) -> dict:
+    """Частки «кольорів» від усієї суші (рослинність + сніг)."""
+    total = max(v.size + n_snow, 1)
+    earth = float((v < 0.3).sum() / total)
+    light = float(((v >= 0.3) & (v < 0.6)).sum() / total)
+    deep = float((v >= 0.6).sum() / total)
+    return {
+        "white_frac": n_snow / total,
+        "earth_frac": earth,
+        "lightgreen_frac": light,
+        "deepgreen_frac": deep,
+        "green_frac": light + deep,
     }

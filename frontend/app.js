@@ -28,13 +28,22 @@ async function loadScore() {
   const preset = presetSel.value ? `?preset=${presetSel.value}` : "";
   const score = await getJSON(`/api/score/${current.id}${preset}`);
   const p = new ScorePlayer(score, { getTime: () => nowT(score), getRate: () => (hasVideo() ? video.playbackRate : 1) });
+  const tl = score.timeline;
+  const dateAt = (t) => {
+    if (!tl) return "";
+    const d = new Date(tl.start);
+    d.setDate(d.getDate() + Math.round(t * tl.days_per_second));
+    return d.toISOString().slice(0, 10) + " · ";
+  };
   p.onTick = (t) => {
     const layers = p.layers.map((l) => `${l.id} ${(p.layerGain(l.id, t) * 100).toFixed(0)}%`).join(" · ");
-    statusEl.textContent = `t=${t.toFixed(1)}s · ${score.preset}${layers ? " · " + layers : ""}`;
+    statusEl.textContent = `${dateAt(t)}t=${t.toFixed(1)}s · ${score.preset}${layers ? " · " + layers : ""}`;
   };
   await p.load();
   if (token !== loadToken) return p.dispose(); // за цей час користувач обрав інше
   player = p;
+  // Пресет може задати швидкість відео (напр. 0.25×), щоб у сітці 72 BPM вистачило тактів
+  video.defaultPlaybackRate = video.playbackRate = score.playback_rate || 1;
   if (wasPlaying) player.start(); // зміна пресету під час гри не зупиняє звук
   $("video-note").textContent =
     (score.is_sample ? "⚠ Фічі ще не пораховано, звучать демо-дані. " : "") +
