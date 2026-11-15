@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Заміна духового голосу · Earth Jukebox</title>
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+  <style>
+    :root { --bg:#0b1110; --card:#121b19; --line:#ffffff1f; --fg:#e9f0ea; --muted:#9fb0a4; --acc:#b5e58e; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui,-apple-system,sans-serif; }
+    main { max-width:1100px; margin:0 auto; padding:16px; }
+    h1 { font-size:20px; margin:0 0 4px; } .sub { color:var(--muted); margin:0 0 14px; max-width:820px; }
+    .top { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start; }
+    #screen { position:relative; aspect-ratio:16/9; background:#081010; border-radius:10px; overflow:hidden; }
+    #view { position:absolute; overflow:hidden; } #view video { position:absolute; left:0; top:0; max-width:none; transform-origin:0 0; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; }
+    button, select { height:34px; padding:0 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--fg); font:inherit; cursor:pointer; }
+    button:hover { background:#1c2a26; }
+    input[type=range] { accent-color:var(--acc); } #seek { flex:1; min-width:180px; }
+    #date { font:13px ui-monospace,monospace; }
+    .variants { display:flex; flex-direction:column; gap:8px; }
+    .v { display:grid; grid-template-columns:22px 1fr; gap:8px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); cursor:pointer; }
+    .v:has(input:checked) { border-color:var(--acc); background:#16241d; }
+    .v input { accent-color:var(--acc); margin-top:3px; }
+    .v b { display:block; } .v small { color:var(--muted); }
+    .opts { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; color:#d3ded5; }
+    #now { margin-top:10px; font:12px ui-monospace,monospace; color:var(--muted); min-height:18px; }
+    @media (max-width:820px) { .top { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Заміна духового голосу (3-й шар)</h1>
+  <p class="sub">Ноти ті самі, що в грі (з даних: фраза вгору — зелень росте, вниз — спадає), змінюється лише <b>інструмент і манера</b>.
+    Оберіть варіант і слухайте поверх інших шарів або окремо. «Демо-фраза» — однакова коротка фраза для швидкого порівняння без відео.</p>
+
+  <div class="top">
+    <div>
+      <div id="screen"><div id="view"><video id="video" muted playsinline preload="auto"></video></div></div>
+      <div class="controls">
+        <select id="region"></select>
+        <button id="play" type="button">▶ Play</button>
+        <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Позиція">
+        <span id="date">—</span>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="others" checked> Інші шари (вітер, птахи, дзвіночки…)</label>
+        <label>Гучність голосу <input type="range" id="vol" min="0" max="100" value="70"></label>
+      </div>
+      <div class="controls"><button id="demo" type="button">♪ Демо-фраза (вгору, потім вниз)</button></div>
+      <div id="now"></div>
+    </div>
+    <div class="variants" id="variants"></div>
+  </div>
+</main>
+
+<script type="module">
+import { ScorePlayer } from "../player.js";
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const REGIONS = [["ndvi_europe", "Europe"], ["ndvi_north_america", "North America"], ["ndvi_asia", "Asia"], ["ndvi_world", "Whole Earth"]];
+const octave = (note, k) => Tone.Frequency(note).transpose(12 * k).toNote();
+
+// ---------- Варіанти. Кожен: build(out) → play(e, dur) ; e = { notes, glide_from, vel, timbre }, dur — реальні секунди ----------
+const VARIANTS = [
+  { id: "current", name: "Поточний (для порівняння)", desc: "Флейта↔кларнет, ковзання до кожної ноти знизу/зверху — той самий «комар».",
+    build(out) {
+      const s = new Tone.Synth({ oscillator: { type: "custom", partials: [1, 0.5, 0.15, 0.05] }, envelope: { attack: 0.08, decay: 0.2, sustain: 0.8, release: 0.6 } }).connect(out);
+      s.volume.value = -9;
+      return (e, dur) => {
+        const now = Tone.now();
+        if (e.glide_from) { s.triggerAttack(e.glide_from, now, e.vel); s.frequency.exponentialRampToValueAtTime(Tone.Frequency(e.notes[0]).toFrequency(), now + 0.3); }
+        else s.triggerAttack(e.notes[0], now, e.vel);
+        s.triggerRelease(now + dur);
+      };
+    } },
+  { id: "flute_low", name: "1. Тепла флейта, октавою нижче", desc: "Майже чистий тон, м'яка атака, легке плавне легато між нотами (без «під'їзду» до кожної), фільтр зрізає писк.",
+    build(out) {
+      const lp = new Tone.Filter(1100, "lowpass").connect(out);
+      const s = new Tone.MonoSynth({ portamento: 0.12, oscillator: { type: "custom", partials: [1, 0.18, 0.04] },
+        envelope: { attack: 0.35, decay: 0.3, sustain: 0.85, release: 1.4 }, filterEnvelope: { attack: 0.4, baseFrequency: 900, octaves: 0.6, sustain: 1 } }).connect(lp);
+      s.volume.value = -12;
+      return (e, dur) => s.triggerAttackRelease(octave(e.notes[0], -1), Math.max(dur, 0.6), Tone.now(), e.vel * 0.9);
+    } },
+  { id: "cello", name: "2. Віолончель (смичок)", desc: "Низький теплий смичковий тон (2 октави нижче), повільний наростаючий «смичок», ноти перетікають одна в одну.",
+    build(out) {
+      const lp = new Tone.Filter(650, "lowpass").connect(out);
+      const vib = new Tone.Vibrato(4.8, 0.06).connect(lp);
+      const s = new Tone.MonoSynth({ portamento: 0.18, oscillator: { type: "sawtooth" },
+        envelope: { attack: 0.5, decay: 0.4, sustain: 0.8, release: 1.8 }, filterEnvelope: { attack: 0.6, baseFrequency: 220, octaves: 1.6, sustain: 0.7, release: 1.5 } }).connect(vib);
+      s.volume.value = -17;
+      return (e, dur) => s.triggerAttackRelease(octave(e.notes[0], -2), Math.max(dur * 1.2, 0.9), Tone.now(), e.vel);
+    } },
+  { id: "choir", name: "3. Хор «у-у»", desc: "Тихий людський «у-у» (фільтр голосної), ноти накладаються й повільно зникають — як подих.",
+    build(out) {
+      const f1 = new Tone.Filter({ type: "bandpass", frequency: 320, Q: 5 }).connect(out);
+      const f2 = new Tone.Filter({ type: "bandpass", frequency: 800, Q: 6 }).connect(out);
+      const g2 = new Tone.Gain(0.35).connect(f2);
+      const s = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fatsawtooth", count: 3, spread: 18 }, envelope: { attack: 0.7, decay: 0.3, sustain: 0.8, release: 2.2 } });
+      s.connect(f1); s.connect(g2);
+      s.volume.value = -4;
+      return (e, dur) => s.triggerAttackRelease(octave(e.notes[0], -1), Math.max(dur * 1.5, 1.2), Tone.now(), e.vel);
+    } },
+  { id: "kalimba", name: "4. Калімба (щипок)", desc: "Короткий м'який щипок без тягнучого звуку — немає чим «пищати». Мелодія та сама, але звучить як крапельки дерева.",
+    build(out) {
+      const s = new Tone.PolySynth(Tone.FMSynth, { harmonicity: 3.01, modulationIndex: 1.6,
+        envelope: { attack: 0.002, decay: 1.1, sustain: 0, release: 0.8 }, modulationEnvelope: { attack: 0.002, decay: 0.25, sustain: 0, release: 0.2 } }).connect(out);
+      s.volume.value = -13;
+      return (e) => s.triggerAttackRelease(e.notes[0], 0.3, Tone.now(), e.vel);
+    } },
+  { id: "bass", name: "5. Тихий бас (одна нота на фразу)", desc: "Замість мелодії — одна довга глибока нота на початку кожної фрази. Лише «напрям» гармонії, майже непомітно.",
+    build(out) {
+      const s = new Tone.MonoSynth({ oscillator: { type: "sine" }, envelope: { attack: 0.8, decay: 0.5, sustain: 0.9, release: 2.5 },
+        filterEnvelope: { baseFrequency: 300, octaves: 0.5 } }).connect(out);
+      s.volume.value = -8;
+      let lastPhrase = -1;
+      return (e, dur, ev) => {
+        if (ev.phrase === lastPhrase) return;          // лише перша нота фрази
+        lastPhrase = ev.phrase;
+        s.triggerAttackRelease(octave(e.notes[0], -2), Math.max(ev.phraseDur, 2), Tone.now(), e.vel);
+      };
+    } },
+  { id: "off", name: "6. Без голосу", desc: "Прибрати шар зовсім: лишаються вітер, птахи, дзвіночки, капель, акорд і дрон.",
+    build() { return () => {}; } },
+];
+
+$("variants").innerHTML = VARIANTS.map((v, i) => `
+  <label class="v"><input type="radio" name="variant" value="${v.id}" ${i === 1 ? "checked" : ""}>
+    <span><b>${v.name}</b><small>${v.desc}</small></span></label>`).join("");
+const chosen = () => document.querySelector('input[name="variant"]:checked').value;
+
+// ---------- Аудіо ----------
+let out = null, instruments = {};
+function ensureInstruments() {
+  if (out) return;
+  const rev = new Tone.Reverb({ decay: 4, wet: 0.3 }).toDestination();
+  out = new Tone.Volume(0).connect(rev);
+  for (const v of VARIANTS) instruments[v.id] = v.build(out);
+  setVol();
+}
+function setVol() { if (out) out.volume.value = Tone.gainToDb(Math.max(0.001, $("vol").value / 100)); }
+$("vol").oninput = setVol;
+
+// ---------- Дані регіону ----------
+let player = null, voiceEvents = [], nextIdx = 0, prevT = null, crop = null, features = null, token = 0;
+const getJSON = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); };
+
+function layout() {
+  const box = $("screen"), W = box.clientWidth, H = box.clientHeight;
+  const VW = video.videoWidth || 4096, VH = video.videoHeight || 2048;
+  const [sx, sy, sw, sh] = crop || [0, 0, VW, VH];
+  const k = Math.min(W / sw, H / sh);
+  Object.assign($("view").style, { width: `${sw * k}px`, height: `${sh * k}px`, left: `${(W - sw * k) / 2}px`, top: `${(H - sh * k) / 2}px` });
+  Object.assign(video.style, { width: `${VW * k}px`, height: `${VH * k}px`, transform: `translate(${-sx * k}px, ${-sy * k}px)` });
+}
+video.addEventListener("loadedmetadata", layout);
+addEventListener("resize", layout);
+
+/** Події голосу з партитури + номер фрази (новий, коли пауза між нотами > 1 долі) */
+function prepareVoice(score) {
+  const spb = (60 / score.tempo_bpm) * (score.playback_rate || 1);
+  const ev = score.events.filter((e) => e.voice === "wind").map((e) => ({ ...e }));
+  let phrase = 0;
+  ev.forEach((e, i) => { if (i && e.t - (ev[i - 1].t + ev[i - 1].dur) > spb * 1.05) phrase++; e.phrase = phrase; });
+  ev.forEach((e) => { const ph = ev.filter((x) => x.phrase === e.phrase); e.phraseDur = (ph.at(-1).t + ph.at(-1).dur - ph[0].t) / (score.playback_rate || 1); });
+  return ev;
+}
+
+async function load(id) {
+  const my = ++token;
+  player?.dispose(); player = null;
+  video.pause(); $("play").textContent = "▶ Play";
+  const v = (await getJSON("/api/videos")).find((x) => x.id === id);
+  crop = v.crop; layout();
+  const src = v.has_local_video ? `/media/${v.local_video}` : v.video_url;
+  if (!video.src.endsWith(src)) video.src = src;
+  const [s, f] = await Promise.all([getJSON(`/api/score/${id}`), getJSON(`/api/features/${id}`)]);
+  const p = new ScorePlayer(s, { getTime: () => video.currentTime, getRate: () => video.playbackRate });
+  await p.load();
+  if (my !== token) return p.dispose();
+  player = p; features = f; voiceEvents = prepareVoice(s); prevT = null;
+  player.setMuted(["wind"], true);                      // оригінальний голос вимкнено — грає обраний варіант
+  applyOthers();
+  video.playbackRate = s.playback_rate || 0.25;
+}
+
+const OTHER = ["air_winter", "air_warm", "air_dry", "birds", "drone_D", "drone_F", "pad", "chimes", "drips", "wood"];
+function applyOthers() { player?.setMuted(OTHER, !$("others").checked); }
+$("others").onchange = applyOthers;
+
+function fire(e, rate) {
+  ensureInstruments();
+  const dur = e.dur / rate;
+  instruments[chosen()](e, dur, e);
+  $("now").textContent = `нота ${e.notes[0]}${e.glide_from ? ` (у даних: ковзання від ${e.glide_from})` : ""} · фраза ${e.phrase}`;
+}
+
+// власний «програвач» голосу: ті самі моменти, що й у грі
+(function loop() {
+  if (player && !video.paused) {
+    const t = video.currentTime;
+    if (prevT === null || t < prevT || t - prevT > 1) { nextIdx = voiceEvents.findIndex((e) => e.t >= t); if (nextIdx < 0) nextIdx = voiceEvents.length; }
+    while (nextIdx < voiceEvents.length && voiceEvents[nextIdx].t <= t) fire(voiceEvents[nextIdx++], video.playbackRate);
+    prevT = t;
+  }
+  if (features) {
+    const t = video.currentTime, tl = features.timeline, d = new Date(tl.start + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + Math.round(t * tl.days_per_second));
+    $("date").textContent = d.toISOString().slice(0, 10);
+    if (!$("seek").matches(":active")) $("seek").value = Math.round((t / (video.duration || 30)) * 1000);
+  }
+  requestAnimationFrame(loop);
+})();
+
+$("play").onclick = async () => {
+  await Tone.start(); ensureInstruments();
+  if (!player) return;
+  if (video.paused) { if (!player.timer) player.start(); else player.resume(); await video.play(); $("play").textContent = "❚❚ Pause"; }
+  else { video.pause(); player.pause(); $("play").textContent = "▶ Play"; }
+};
+video.addEventListener("ended", () => { player?.pause(); $("play").textContent = "▶ Play"; });
+$("seek").oninput = () => { if (video.duration) { video.currentTime = ($("seek").value / 1000) * video.duration; prevT = null; } };
+
+// Демо-фраза: D4 F4 G4 A4 (вгору, як весною), потім A4 G4 F4 D4 (вниз, як восени) — по 0.83 с
+$("demo").onclick = async () => {
+  await Tone.start(); ensureInstruments();
+  const notes = ["D4", "F4", "G4", "A4", "A4", "G4", "F4", "D4"], beat = 60 / 72;
+  notes.forEach((n, i) => setTimeout(() => {
+    const up = i < 4, prev = up ? notes[i - 1] : notes[i - 1];
+    fire({ notes: [n], glide_from: i && i !== 4 ? prev : null, vel: 0.3, dur: beat * 0.95, t: 0, phrase: up ? 1000 : 1001, phraseDur: beat * 4 }, 1);
+  }, i * beat * 1000));
+};
+
+$("region").innerHTML = REGIONS.map(([id, n]) => `<option value="${id}">${n}</option>`).join("");
+$("region").onchange = () => load($("region").value);
+load("ndvi_europe").catch((e) => ($("date").textContent = "Помилка: " + e.message));
+</script>
+</body>
+</html>
