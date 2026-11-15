@@ -217,3 +217,10 @@ html:has(.game-page) { scroll-snap-type: y mandatory; }
 .earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
 /* Хітбокс нейрона — точно по центру нейрона (без left/top flex-контейнер ширини 0 центрував його ще й сам → зсув на 32px ліворуч) */
 .node-hitbox { left: 0; top: 0; }
+
+/* Зорі за планетою: тьмяні, повільно мерехтять; зникають, коли з'являється відео */
+.starfield { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+  opacity: calc(.85 * (1 - var(--map-reveal, 0))); animation: star-breathe 9s ease-in-out infinite; }
+.starfield-b { animation-duration: 13s; animation-delay: -6s; }
+@keyframes star-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(.45); } }
+.planet-title .earth-orb { z-index: 1; }

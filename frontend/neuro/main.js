@@ -109,6 +109,30 @@ const fmtDay = (d) => (d ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()].slice(0,
   requestAnimationFrame(loop);
 })();
 
+// ======================= Зорі на екрані з планетою =======================
+// Два нерухомі шари дрібних тьмяних зір; CSS повільно «дихає» їхньою яскравістю в протифазі → ледь помітне мерехтіння.
+// Детерміновано (власний генератор), перемальовується лише при зміні розміру вікна.
+function drawStars() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  document.querySelectorAll(".starfield").forEach((c, layer) => {
+    const W = innerWidth, H = innerHeight;
+    c.width = W * dpr; c.height = H * dpr;
+    const g = c.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let seed = 7 + layer * 101;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const n = Math.round((W * H) / 9000);                 // ~110 зір на 1280×800 у кожному шарі
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * W, y = rnd() * H, big = rnd() > 0.93;
+      g.globalAlpha = big ? 0.6 + rnd() * 0.3 : 0.25 + rnd() * 0.3;
+      g.fillStyle = rnd() > 0.8 ? "#cfe3ff" : "#ffffff";
+      g.beginPath(); g.arc(x, y, big ? 1.3 : 0.7 + rnd() * 0.4, 0, Math.PI * 2); g.fill();
+    }
+  });
+}
+drawStars();
+addEventListener("resize", drawStars);
+
 // ======================= Звук =======================
 async function ensureAudio() {
   await Tone.start(); // браузер дозволяє звук лише після дії користувача
