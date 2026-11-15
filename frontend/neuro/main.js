@@ -1,6 +1,9 @@
-// The Earth Information Jukebox — нова сторінка (дизайн команди з архіву + наш рушій).
-// Дані: /api/videos, /api/score/<id> (партитура + keyframes з метриками), /api/features/<id> (дати).
+// The Earth Information Jukebox — сторінка гри (дизайн команди + наш рушій). Інтерфейс англійською.
+// Дані: /api/videos, /api/score/<id> (партитура), /api/features/<id> (метрики кадрів + дати).
 // Звук: ScorePlayer (../player.js). Вигляд: ./ui.js (UI). Тут лише правила гри й керування.
+//
+// Гра: 6 нейронів кожні 180 днів (Dec 2023 … Jun 2026) → 5 пар-інтервалів, по одному фіксованому питанню.
+// Правильна відповідь або дзвіночок (пробіл) відкривають інтервал однаковою функцією openInterval().
 import { ScorePlayer } from "../player.js";
 import { UI } from "./ui.js";
 
@@ -9,21 +12,15 @@ const video = $("video");
 const view = $("view");
 const ctx2d = view.getContext("2d");
 
-const NAMES = {
-  ndvi_world: "Весь світ", ndvi_north_america: "Північна Америка", ndvi_south_america: "Південна Америка",
-  ndvi_eurasia: "Євразія", ndvi_africa: "Африка", ndvi_australia: "Австралія",
-};
-const MONTH_EN = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
-const NOM = ["січень", "лютий", "березень", "квітень", "травень", "червень", "липень", "серпень", "вересень", "жовтень", "листопад", "грудень"];
-const GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
-const SHORT = ["січ", "лют", "бер", "квіт", "трав", "черв", "лип", "серп", "вер", "жовт", "лист", "груд"];
-
-/** «Jan 2024» → { nom: "січень 2024", gen: "січня 2024" } */
-function uk(label) {
-  const [m, y] = label.split(" ");
-  const i = MONTH_EN[m];
-  return i === undefined ? { nom: label, gen: label } : { nom: `${NOM[i]} ${y}`, gen: `${GEN[i]} ${y}` };
-}
+// Лише регіони, де грудень і червень чутно різні (у південній півкулі й тропіках питання втрачають сенс)
+const REGIONS = [
+  ["ndvi_world", "Whole Earth"],
+  ["ndvi_north_america", "North America"],
+  ["ndvi_europe", "Europe"],
+  ["ndvi_asia", "Asia"],
+];
+const NAMES = Object.fromEntries(REGIONS);
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 // Групи мікшера → id шарів і голосів у партитурі
 const TRACKS = {
@@ -32,22 +29,45 @@ const TRACKS = {
   birds: ["birds"],
   music: ["wind", "pad", "drone_D", "drone_F", "drips", "wood"],
 };
-const SEGMENT_SECONDS = 6;   // скільки реальних секунд звучить відкритий відрізок
-const YEAR_SECONDS = 3;      // скільки звучить один період («Прослухати»)
-const MIN_CHANGE = 0.15;     // зміна < 15% діапазону регіону → «тиха ділянка» без питання (на слух не розрізнити)
+const STEP_DAYS = 180;        // нейрон кожні 180 днів
+const NEURONS = 6;
+const MONTH_DAYS = 30;        // звук нейрона — його місяць (±15 днів)
+const MONTH_SECONDS = 4;      // … звучить 4 с
+const INTERVAL_SECONDS = 12;  // 180 днів інтервалу звучать 12 с
+const BELL_PAUSE_MS = 1100;   // «природа слухає»
+
+// Питання — у фіксованому порядку, по одному на інтервал. pick(A, B) → 0 (перший) або 1 (другий) за даними кадрів.
+const lessGreen = (A, B) => (A.green <= B.green ? 0 : 1);
+const moreGreen = (A, B) => (A.green >= B.green ? 0 : 1);
+const QUESTIONS = [
+  { text: "Where is nature asleep?", pick: lessGreen,
+    hint: "Sleeping nature is quiet: few bells, no birds." },
+  { text: "Where does the sound turn colder?",
+    pick: (A, B) => (Math.abs(A.snow - B.snow) > 0.01 ? (A.snow >= B.snow ? 0 : 1) : lessGreen(A, B)),
+    hint: "Cold sounds like a whistling winter wind." },
+  { text: "Where do the birds have more to say?", pick: moreGreen,
+    hint: "Birds sing where the land is green." },
+  { text: "Where do the bells ring brighter?", pick: moreGreen,
+    hint: "More green means more, brighter chimes." },
+  { text: "Where is the land bare?", pick: lessGreen,
+    hint: "Bare land sounds sparse and dry." },
+];
 
 let videos = [];
 let current = null;          // id регіону
 let player = null, score = null, features = null, crop = null;
 let loadToken = 0;
 let uiReady = false;
-let fixedT = null;           // коли не null, звук «заморожено» на цьому часі (прослуховування періоду)
 let run = 0;                 // id поточного відтворення (новий скасовує попередній)
 const mix = {};              // track → гучність 0..1 з мікшера
 let game = null;
+let neurons = [];            // [{ t, day, short: "Dec 2023", full: "December 2023", green, snow }]
 let globe = null;            // 3D-глобус (globe.js), якщо WebGL доступний
-let guideRun = 0;            // id автосупроводу (новий скасовує попередній)
-let earSynth = null;
+let earSynth = null, bowlVoices = null;
+let listeningAll = false;
+let playingNode = null;     // нейрон, чий місяць зараз звучить
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -72,11 +92,12 @@ function drawFrame() {
 
 function dateAt(t) {
   const tl = features?.timeline;
-  if (!tl) return "";
-  const d = new Date(tl.start);
-  d.setDate(d.getDate() + Math.round(t * tl.days_per_second));
-  return `${d.getDate()} ${SHORT[d.getMonth()]} ${d.getFullYear()}`;
+  if (!tl) return null;
+  const d = new Date(tl.start + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + Math.round(t * tl.days_per_second));
+  return d;
 }
+const fmtDay = (d) => (d ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}` : "");
 
 let needDraw = true;
 ["seeked", "loadeddata", "play"].forEach((ev) => video.addEventListener(ev, () => (needDraw = true)));
@@ -84,7 +105,7 @@ addEventListener("resize", () => (needDraw = true));
 (function loop() {
   // перемальовуємо відео лише коли воно грає або змінився кадр (на паузі — нічого не робимо)
   if (needDraw || !video.paused) { drawFrame(); needDraw = video.readyState < 2; }
-  if (features) $("map-tag").textContent = `NASA · NDVI · ${dateAt(fixedT ?? video.currentTime)}`;
+  if (features) $("map-tag").textContent = `NASA · NDVI · ${fmtDay(dateAt(video.currentTime))}`;
   requestAnimationFrame(loop);
 })();
 
@@ -103,98 +124,40 @@ function stopPlayback() {
   run++;
   video.pause();
   player?.pause();
-  fixedT = null;
+  if (playingNode !== null) { UI.setPlaying(playingNode, false); playingNode = null; }
 }
 
-/** Відео + звук від кадру a до кадру b за `seconds` реальних секунд. Promise завершується в кінці або при скасуванні. */
-async function playSegment(ka, kb, seconds) {
+/** Відео + звук від часу a до b (с відео) за `seconds` реальних секунд. Promise завершується в кінці або при скасуванні. */
+async function playSegment(a, b, seconds) {
   stopPlayback();
   const my = run;
   await ensureAudio();
-  if (my !== run) return;
-  video.currentTime = ka.t;
-  video.playbackRate = Math.max((kb.t - ka.t) / seconds, 0.0625);
+  if (my !== run) return false;
+  video.currentTime = a;
+  video.playbackRate = Math.max((b - a) / seconds, 0.0625);
   player.resume();
   await video.play().catch(() => {});
-  await new Promise((resolve) => {
+  return new Promise((resolve) => {
     const watch = () => {
-      if (my !== run) return resolve();
-      if (video.currentTime >= kb.t || video.ended) { video.pause(); player.pause(); return resolve(); }
+      if (my !== run) return resolve(false);
+      if (video.currentTime >= b || video.ended) { video.pause(); player.pause(); return resolve(true); }
       requestAnimationFrame(watch);
     };
     requestAnimationFrame(watch);
   });
 }
 
-/** Звук одного періоду: час «заморожено» на ключовому кадрі */
-async function playPeriod(i) {
-  stopPlayback();
-  const my = run;
-  await ensureAudio();
-  if (my !== run) return;
-  const kf = score.keyframes[i];
-  fixedT = kf.t;
-  video.currentTime = kf.t;
-  player.resume();
-  UI.setPlaying(i, true);
-  await new Promise((r) => setTimeout(r, YEAR_SECONDS * 1000));
-  UI.setPlaying(i, false);
-  if (my === run) { player.pause(); fixedT = null; }
+/** Звук нейрона: його місяць (±15 днів) */
+async function playMonth(i) {
+  const n = neurons[i], half = MONTH_DAYS / 2 / features.timeline.days_per_second;
+  const a = Math.max(0, n.t - half), b = Math.min(features.duration_s - 0.05, n.t + half);
+  const p = playSegment(a, b, MONTH_SECONDS);
+  playingNode = i; UI.setPlaying(i, true);
+  await p;
+  if (playingNode === i) { UI.setPlaying(i, false); playingNode = null; }
 }
 
-// ======================= Гра: питання з даних =======================
-function buildGame() {
-  const kf = score.keyframes;
-  const all = features.frames;
-  const range = (k) => { const v = all.map((f) => f[k]); return Math.max(...v) - Math.min(...v); };
-  const gR = range("green_frac") || 1, wR = range("white_frac");
-  const hasSnow = Math.max(...all.map((f) => f.white_frac)) > 0.05;
-  const segs = [];
-  for (let a = 0; a + 1 < kf.length; a++) {
-    const b = a + 1, A = kf[a].metrics, B = kf[b].metrics;
-    const dg = (B.green_frac - A.green_frac) / gR;
-    const dw = hasSnow ? (B.white_frac - A.white_frac) / (wR || 1) : 0;
-    const seg = { a, b };
-    if (Math.max(Math.abs(dg), Math.abs(dw)) < MIN_CHANGE) { seg.calm = true; segs.push(seg); continue; }
-    const snow = Math.abs(dw) > Math.abs(dg);
-    const more = a % 2 === 0;           // чергуємо «більше / менше» для різноманітності
-    const key = snow ? "white_frac" : "green_frac";
-    seg.text = snow
-      ? (more ? "Де віє хуртовина — у якому періоді більше снігу?" : "Де сніг уже розтанув?")
-      : (more ? "У якому періоді більше зелені?" : "Коли природа «спить» — де менше зелені?");
-    seg.hint = snow ? "Хуртовина виє = багато снігу." : "Більше дзвіночків і птахів = більше зелені.";
-    const va = A[key], vb = B[key];
-    seg.correct = more ? (va >= vb ? a : b) : (va <= vb ? a : b);
-    segs.push(seg);
-  }
-  return { segs, i: 0, errors: 0, firstTry: 0, asked: 0, busy: false, finished: false, started: false, keysTold: false };
-}
-
-/** Скасувати автосупровід (голос + відтворення), напр. коли людина відповіла раніше */
-function cancelGuide() {
-  guideRun++;
-  UI.stopSpeak();
-  stopPlayback();
-}
-
-/** Автопрослуховування для незрячих: гра сама озвучує питання, грає обидва періоди й чекає «1» або «2».
- *  Руками потрібна лише одна клавіша на відповідь. */
-async function guide(seg) {
-  const my = ++guideRun;
-  const kf = score.keyframes, A = uk(kf[seg.a].label), B = uk(kf[seg.b].label);
-  const alive = () => my === guideRun && game && !game.busy;
-  await UI.speak(`Ділянка з ${A.gen} по ${B.nom}. ${seg.calm ? "Тиха ділянка, майже без змін." : seg.text}`);
-  if (!alive()) return;
-  if (seg.calm) { await UI.speak("Натисніть пробіл, щоб послухати."); return; }
-  await UI.speak(`Перший: ${A.nom}.`); if (!alive()) return;
-  await playPeriod(seg.a); if (!alive()) return;
-  await UI.speak(`Другий: ${B.nom}.`); if (!alive()) return;
-  await playPeriod(seg.b); if (!alive()) return;
-  await UI.speak(game.keysTold ? "Один чи два?" : "Натисніть 1, якщо перший, або 2, якщо другий. R — послухати ще раз, пробіл — ехо.");
-  game.keysTold = true;
-}
-
-/** Короткі звукові сигнали (earcons) + вібрація на телефоні: результат чути й відчути без екрана */
+/** Короткі сигнали (earcons) + вібрація на телефоні: результат чути й відчути без екрана */
 function earcon(kind) {
   try {
     if (!earSynth) {
@@ -208,132 +171,198 @@ function earcon(kind) {
   } catch { /* звук необов'язковий */ }
 }
 
-/** Опис періоду для «Екскурсії без рук»: що видно й що чути */
-function describe(k) {
-  const m = k.metrics, L = score.legend || {};
-  const nm = (v, r) => (r ? Math.min(1, Math.max(0, (v - r[0]) / (r[1] - r[0]))) : 0);
-  const date = uk(k.label).nom, green = Math.round(m.green_frac * 100), snow = m.white_frac > 0.05;
-  if (nm(m.white_frac, L.winter_range) > 0.5) return `${date}. Зима: сніг укриває ${Math.round(m.white_frac * 100)} відсотків суші, чути хуртовину.`;
-  if (nm(m.green_up_rate, L.spring_range) > 0.3) return `${date}. Зелень росте${snow ? ", сніг тане: чути капель" : ""}. Дзвіночків більшає, мелодія йде вгору. Зелені ${green} відсотків.`;
-  if (nm(m.green_up_rate, L.autumn_range) > 0.3) return `${date}. Зелень спадає: сухий вітер, дерев'яні клацання, мелодія йде вниз. Зелені ${green} відсотків.`;
-  return `${date}. Пора буйної зелені: птахи й багато дзвіночків. Зелені ${green} відсотків.`;
+/** Дзвіночок людини — «співоча чаша»: один чистий низький удар (G3) з довгим затуханням і негармонічними обертонами.
+ *  Свідомо не схожий на численні високі дзвіночки соніфікації. */
+function bowl() {
+  try {
+    if (!bowlVoices) {
+      const rev = new Tone.Reverb({ decay: 6, wet: 0.35 }).toDestination();
+      const voice = (vol, decay) => {
+        const s = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.004, decay, sustain: 0, release: 1.5 } }).connect(rev);
+        s.volume.value = vol;
+        return s;
+      };
+      bowlVoices = [voice(-5, 5), voice(-15, 3.5), voice(-23, 2)];
+    }
+    const now = Tone.now(), f = 196;
+    [1, 2.71, 5.15].forEach((r, k) => bowlVoices[k].triggerAttackRelease(f * r, 0.05, now));
+    navigator.vibrate?.([60]);
+  } catch { /* звук необов'язковий */ }
 }
 
-/** «Екскурсія без рук»: усі періоди по черзі з описом голосом, без питань */
-async function tour() {
-  cancelGuide();
-  const my = guideRun;
-  const kf = score.keyframes;
-  UI.hideMessage(); UI.hideQuestion(); UI.showBell(false); UI.showHint("");
-  await UI.speak(`Екскурсія без рук: ${NAMES[current] || ""}. Просто слухайте. Escape — зупинити.`);
-  for (let i = 0; i + 1 < kf.length && my === guideRun; i++) {
-    UI.showPair(i, i + 1);
-    UI.unlockScreen(describe(kf[i]));
-    UI.announce(describe(kf[i]));
-    await UI.speak(describe(kf[i]));
-    if (my !== guideRun) break;
-    await playSegment(kf[i], kf[i + 1], SEGMENT_SECONDS);
-  }
-  UI.lockScreen();
-  if (my !== guideRun) return;
-  await UI.speak("Екскурсію завершено.");
-  if (!game.started) showStart();
-  else if (game.finished) finish();
-  else askPair();
+// ======================= Гра =======================
+function buildNeurons() {
+  const tl = features.timeline, dps = tl.days_per_second;
+  const lastDay = Math.floor((features.duration_s - 0.05) * dps);
+  const days = Array.from({ length: NEURONS }, (_, i) => Math.min(i * STEP_DAYS, lastDay));
+  return days.map((day) => {
+    const t = day / dps, d = dateAt(t);
+    const win = features.frames.filter((f) => Math.abs(f.t - t) <= MONTH_DAYS / 2 / dps);
+    const avg = (k) => win.reduce((s, f) => s + f[k], 0) / (win.length || 1);
+    return { t, day, short: `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}`,
+      full: `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`, green: avg("green_frac"), snow: avg("white_frac") };
+  });
 }
 
-function askPair() {
-  const g = game, seg = g.segs[g.i], kf = score.keyframes;
-  const A = uk(kf[seg.a].label), B = uk(kf[seg.b].label);
-  UI.showHint("");
-  UI.showPair(seg.a, seg.b);
-  UI.showBell(true);
-  UI.setScore(`Відрізок ${g.i + 1} з ${g.segs.length}`);
-  if (seg.calm) UI.showQuestion(`${A.nom} → ${B.nom}: тиха ділянка, майже без змін. Натисніть 🔔 Ехо, щоб послухати.`);
-  else UI.showQuestion(`${seg.text} (${A.nom} чи ${B.nom})`);
-  UI.announce(`Ділянка з ${A.gen} по ${B.nom}. ${seg.calm ? "Тиха ділянка." : seg.text}`);
-  guide(seg);
+function buildGame() {
+  const pairs = QUESTIONS.slice(0, neurons.length - 1).map((q, i) => ({
+    a: i, b: i + 1, q, correct: i + q.pick(neurons[i], neurons[i + 1]),
+  }));
+  return { pairs, i: 0, busy: false, skip: false, finished: false, last: null, firstTry: 0, errors: 0 };
 }
 
-async function unlock(withBell) {
-  const g = game, seg = g.segs[g.i], kf = score.keyframes;
-  g.busy = true;
-  UI.link(seg.a, seg.b);
-  if (withBell) { UI.ringBell(); await new Promise((r) => setTimeout(r, 900)); }
-  UI.unlockScreen(`${uk(kf[seg.a].label).nom} → ${uk(kf[seg.b].label).nom}`);
-  await playSegment(kf[seg.a], kf[seg.b], SEGMENT_SECONDS);
-  UI.lockScreen();
-  g.busy = false; g.errors = 0; g.i += 1;
-  if (g.i >= g.segs.length) finish(); else askPair();
-}
+const periodText = (p) => `${neurons[p.a].full} — ${neurons[p.b].full}`;
 
-function finish() {
+/** Показати стан поточної пари: питання ліворуч, дзвіночок, замкнене вікно */
+function showPairState({ speakIt = false } = {}) {
   const g = game;
-  g.finished = true;
-  UI.hideQuestion();
-  UI.showBell(false);
-  const msg = g.asked ? `З першої спроби: ${g.firstTry} з ${g.asked}` : "";
-  UI.setScore(msg);
-  UI.showMessage("Нейронну мережу збудовано!", "▶ Слухати весь період", playAll);
-  UI.announce(`Нейронну мережу збудовано. ${msg}. Можна прослухати весь період.`);
-  UI.speak("Нейронну мережу збудовано.");
+  if (listeningAll) return;            // «Listen to all» ще грає — стан пари покажемо після нього
+  if (g.finished) return showFinished();
+  const p = g.pairs[g.i];
+  UI.lockScreen();
+  UI.showPair(p.a, p.b);
+  UI.showQuestion(p.q.text);
+  UI.showBell(true);
+  UI.showHint("");
+  UI.setScore(`Pair ${g.i + 1} of ${g.pairs.length}`);
+  pairMessage("Answer the question — or ring the bell 🔔 to open this period");
+  const say = `Pair ${g.i + 1} of ${g.pairs.length}: ${periodText(p)}. ${p.q.text}`;
+  UI.announce(`${say} Press Space to ring the bell.`);
+  if (speakIt) UI.speak(say);
 }
 
-async function playAll() {
-  UI.hideMessage();
-  const kf = score.keyframes, first = kf[0], last = kf[kf.length - 1];
-  UI.unlockScreen(`Увесь період: ${uk(first.label).nom} → ${uk(last.label).nom}`);
-  await playSegment({ t: 0 }, { t: features.duration_s - 0.05 }, features.duration_s / (score.playback_rate || 0.25));
-  UI.showMessage("Нейронну мережу збудовано!", "▶ Слухати ще раз", playAll);
+/** Текст у вікні відео (+ кнопка «Replay» попереднього інтервалу, якщо він є) */
+function pairMessage(text) {
+  if (game.last) UI.showMessage(text, `↻ Replay ${periodText(game.last)}`, replayLast);
+  else UI.showMessage(text);
+}
+
+/** Відкрити інтервал: спільна дія для правильної відповіді й дзвіночка (перед дзвіночком — удар і пауза) */
+async function openInterval(viaBell) {
+  const g = game;
+  if (!g || g.busy || g.finished) return;
+  stopListeningAll();
+  const p = g.pairs[g.i];
+  g.busy = true; g.skip = false;
+  stopPlayback(); UI.stopSpeak();
+  UI.hideQuestion(); UI.showHint("");
+  if (viaBell) {
+    UI.ringBell(); bowl();
+    await sleep(BELL_PAUSE_MS);                         // природа слухає
+    if (!g.skip) await UI.speak(periodText(p));
+  } else earcon("ok");
+  UI.link(p.a, p.b);
+  if (!g.skip) {
+    UI.unlockScreen(periodText(p));
+    UI.announce(`Opened: ${periodText(p)}.`);
+    await playSegment(neurons[p.a].t, neurons[p.b].t, INTERVAL_SECONDS);
+  }
+  g.last = p; g.busy = false; g.errors = 0; g.i += 1;
+  if (g.i >= g.pairs.length) { g.finished = true; showFinished(true); }
+  else showPairState({ speakIt: true });
+}
+
+function replayLast() {
+  const g = game;
+  if (!g?.last || g.busy) return;
+  UI.unlockScreen(periodText(g.last));
+  playSegment(neurons[g.last.a].t, neurons[g.last.b].t, INTERVAL_SECONDS).then((done) => { if (done && !g.busy && !listeningAll) showPairState(); });
+}
+
+const STORY_OPEN = "The whole story is open. Press Enter to listen to the full sonification from 2023 to 2026.";
+function showFinished(speakIt = false) {
+  if (listeningAll) return;
+  UI.lockScreen();
+  UI.hideQuestion();
+  UI.showPair(-1, -1);
+  UI.setScore(game.firstTry ? `Answered: ${game.firstTry} of ${game.pairs.length}` : "");
+  UI.showMessage("The whole story is open", "▶ Listen to 2023–2026  (Enter)", listenAll);
+  UI.announce(STORY_OPEN);
+  if (speakIt) UI.speak(STORY_OPEN);
+}
+
+/** «Listen to all»: повна соніфікація 2023–2026 разом із відео (для незрячих — основний режим) */
+async function listenAll() {
+  if (!features) return;
+  if (listeningAll) return stopListeningAll(true);
+  if (game?.busy) { game.skip = true; }
+  UI.stopSpeak();
+  listeningAll = true;
+  setAllButton(true);
+  UI.hideMessage(); UI.hideQuestion();
+  const first = neurons[0], last = neurons[neurons.length - 1];
+  UI.unlockScreen(`${first.full} — ${last.full}`);
+  UI.announce(`Playing the full sonification, ${first.full} to ${last.full}. Press Escape to stop.`);
+  const done = await playSegment(0, features.duration_s - 0.05, features.duration_s / (score.playback_rate || 0.25));
+  if (done) stopListeningAll(true);
+}
+function stopListeningAll(restore = false) {
+  if (!listeningAll) return;
+  listeningAll = false;
+  setAllButton(false);
+  stopPlayback();
+  if (restore && game && !game.busy) showPairState();
+}
+function setAllButton(on) {
+  const b = $("listen-all");
+  b.querySelector(".lbl").textContent = on ? "Stop" : "Listen to all";
+  b.querySelector(".ico").textContent = on ? "■" : "🎧";
+  b.setAttribute("aria-label", on ? "Stop listening" : "Listen to the whole period, 2023 to 2026");
 }
 
 const handlers = {
   onPick(i) {
     const g = game;
     if (!g || g.busy || g.finished) return;
-    const seg = g.segs[g.i];
-    if (seg.calm) return handlers.onBell();
-    cancelGuide();
-    if (g.errors === 0) g.asked += 1;
-    if (i === seg.correct) {
+    const p = g.pairs[g.i];
+    if (i !== p.a && i !== p.b) return handlers.onListen(i);
+    stopListeningAll();
+    if (i === p.correct) {
       if (g.errors === 0) g.firstTry += 1;
-      earcon("ok");
-      UI.announce("Так! Відрізок відкрито.");
-      UI.speak("Так!");
-      unlock(false);
+      UI.speak("Yes!");
+      openInterval(false);
     } else {
       UI.wrong(i);
       earcon("no");
       g.errors += 1;
-      const extra = g.errors >= 2 ? " Або натисніть пробіл, щоб відкрити відрізок без відповіді." : "";
-      UI.showHint(`${seg.hint}${extra}`);
-      UI.announce(`Ні. ${seg.hint}${extra}`);
-      UI.speak(`Ні. ${seg.hint} R — послухати ще раз.${extra}`);
+      const msg = `Not quite. ${p.q.hint} Listen to both months again and choose once more — or ring the bell.`;
+      pairMessage(msg);
+      UI.announce(msg);
+      UI.speak(msg);
     }
   },
   onListen(i) {
     if (game?.busy) return;
-    cancelGuide();
-    playPeriod(i);
+    stopListeningAll();
+    UI.stopSpeak();
+    playMonth(i);
   },
   onBell() {
     const g = game;
-    if (!g || g.busy) return;
-    cancelGuide();
-    if (g.finished) return playAll();
-    unlock(true);
+    if (!g) return;
+    if (g.busy) {                     // повторний дзвіночок під час відповіді природи → зупинити й перейти далі
+      g.skip = true; UI.stopSpeak(); stopPlayback();
+      return;
+    }
+    if (g.finished) { UI.ringBell(); bowl(); UI.announce(STORY_OPEN); UI.speak(STORY_OPEN); return; }
+    openInterval(true);
   },
   onTrack(track, vol, enabled) {
     mix[track] = enabled ? vol : 0;
     applyMix();
   },
+  onEnterGame() {
+    if (game && !game.busy && !listeningAll) showPairState();
+  },
 };
 
 // ======================= Регіони =======================
 async function loadRegion(id) {
-  const v = videos.find((x) => x.id === id) || videos.find((x) => x.id === "ndvi_north_america") || videos[0];
+  const v = videos.find((x) => x.id === id) || videos[0];
   const token = ++loadToken;
+  stopListeningAll();
   stopPlayback();
+  UI.stopSpeak();
   $("region-select").value = v.id;
   document.title = `${NAMES[v.id] || v.title} · The Earth Information Jukebox`;
   crop = v.crop || null;
@@ -341,34 +370,27 @@ async function loadRegion(id) {
   if (src && !video.src.endsWith(src)) video.src = src;
 
   const [s, f] = await Promise.all([getJSON(`/api/score/${v.id}`), getJSON(`/api/features/${v.id}`)]);
-  const p = new ScorePlayer(s, { getTime: () => fixedT ?? video.currentTime, getRate: () => video.playbackRate });
+  const p = new ScorePlayer(s, { getTime: () => video.currentTime, getRate: () => video.playbackRate });
   await p.load();
   if (token !== loadToken) return p.dispose();   // за цей час обрали інший регіон
+  if (game) game.skip = true;
   player?.dispose();
   player = p; score = s; features = f;
   applyMix();
 
-  const labels = s.keyframes.map((k) => uk(k.label).nom);
-  if (!uiReady) { UI.init(labels, handlers); uiReady = true; } else UI.setNodes(labels);
+  neurons = buildNeurons();
+  const labels = neurons.map((n) => n.short), full = neurons.map((n) => n.full);
+  if (!uiReady) { UI.init(labels, handlers); uiReady = true; }
+  UI.setNodes(labels, full);
   game = buildGame();
   current = v.id;
-  UI.lockScreen();
-  UI.setCaption("");
+  video.currentTime = 0;
   focusGlobe(v);
-  showStart();
+  showPairState();
+  UI.announce(`${NAMES[v.id]}. ${KEYS_HELP}`);
 }
 
-const KEYS_HELP = "Enter — почати. 1 і 2 — відповідь, R — послухати ще раз, пробіл — ехо, T — екскурсія без рук, Escape — тиша.";
-
-function showStart() {
-  UI.showMessage(`${NAMES[current] || ""}: зміни Землі — у звуці`, "Почати", async () => {
-    await ensureAudio();
-    UI.hideMessage();
-    game.started = true;
-    askPair();
-  });
-  UI.announce(`${NAMES[current] || ""}. ${KEYS_HELP}`);
-}
+const KEYS_HELP = "Space rings the bell and opens the current pair. Enter plays the whole story. 1 or 2 answers, R replays, Escape stops.";
 
 /** Повернути 3D-глобус до центру регіону (центр crop у рівнопроміжній проекції 4096×2048) */
 function focusGlobe(v) {
@@ -377,47 +399,43 @@ function focusGlobe(v) {
   globe.setFocus(((x + w / 2) / 4096) * 360 - 180, 90 - ((y + h / 2) / 2048) * 180);
 }
 
-// Клавіатура — гра повністю без миші. Літери за фізичними клавішами (e.code), тож працює й в українській розкладці.
+const inGame = () => !$("game-shell").classList.contains("intro-mode");
+const goToGame = () => { if (!inGame()) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); };
+
+// Клавіатура. Головні дії — пробіл (дзвіночок) і Enter (слухати все): вони не конфліктують зі скрінрідерами
+// (NVDA/JAWS у режимі перегляду перехоплюють літери й цифри для навігації: F — поле форми, 1–6 — заголовки…).
+// Клавіші за фізичним кодом (e.code), тож працюють у будь-якій розкладці.
 window.addEventListener("keydown", (e) => {
-  const inApp = !$("game-shell").classList.contains("intro-mode");
-  if (!inApp || !game || e.target.closest("input, select, textarea")) return;
-  const overlay = !$("screen-overlay").classList.contains("hidden");
-  const seg = game.segs[game.i];
-  if (e.code === "Escape") { cancelGuide(); return; }
-  if (e.code === "KeyT") { e.preventDefault(); tour(); return; }
-  if (overlay) {
-    if (e.code === "Enter" && !e.target.closest("button")) { e.preventDefault(); $("overlay-btn").click(); }
-    return;
-  }
-  if (e.code === "Space") {
-    if (e.target.closest("button, summary")) return;
-    e.preventDefault();
-    if (!game.finished) handlers.onBell();
-    return;
-  }
-  if (game.finished || game.busy || !seg) return;
-  if (["Digit1", "Numpad1", "ArrowLeft"].includes(e.code)) { e.preventDefault(); handlers.onPick(seg.a); }
-  if (["Digit2", "Numpad2", "ArrowRight"].includes(e.code)) { e.preventDefault(); handlers.onPick(seg.b); }
-  if (e.code === "KeyR") { e.preventDefault(); cancelGuide(); guide(seg); }
+  if (!game || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest("input, select, textarea")) return;
+  // Кнопки на стрічці нейронів не «забирають» пробіл: він завжди = дзвіночок (Enter на нейроні = відповідь)
+  const onAnyControl = !!e.target.closest("button, summary, a");
+  const onControl = onAnyControl && !e.target.closest(".neuron-stage");
+  if (e.code === "Escape") { stopListeningAll(true); if (game.busy) handlers.onBell(); else { stopPlayback(); UI.stopSpeak(); } return; }
+  if (e.code === "Space" && !onControl) { e.preventDefault(); goToGame(); handlers.onBell(); return; }
+  if ((e.code === "Enter" || e.code === "NumpadEnter") && !onAnyControl) { e.preventDefault(); goToGame(); listenAll(); return; }
+  if (!inGame() || onControl) return;
+  const p = game.pairs[game.i];
+  if (game.finished || game.busy || !p) return;
+  if (["Digit1", "Numpad1", "ArrowLeft"].includes(e.code)) { e.preventDefault(); handlers.onPick(p.a); }
+  if (["Digit2", "Numpad2", "ArrowRight"].includes(e.code)) { e.preventDefault(); handlers.onPick(p.b); }
+  if (e.code === "KeyR") { e.preventDefault(); replayLast(); }
 });
 
-// «Пропустити вступ»: одразу до гри; кнопка ховається, коли вступ пройдено
-$("skip-intro").onclick = () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
-addEventListener("scroll", () => {
-  const atEnd = scrollY >= document.documentElement.scrollHeight - innerHeight - 4;
-  $("skip-intro").classList.toggle("gone", atEnd);
-}, { passive: true });
+// Фокус клавіатурою/скрінрідером у грі, поки видно планету → прокрутити до гри
+$("game-shell").addEventListener("focusin", goToGame);
 
 (async function init() {
-  videos = await getJSON("/api/videos");
+  const all = await getJSON("/api/videos");
+  videos = REGIONS.map(([id]) => all.find((v) => v.id === id)).filter(Boolean);
   const sel = $("region-select");
-  sel.innerHTML = videos.map((v) => `<option value="${v.id}">${NAMES[v.id] || v.title}</option>`).join("");
+  sel.innerHTML = videos.map((v) => `<option value="${v.id}">${NAMES[v.id]}</option>`).join("");
   sel.onchange = () => (location.hash = sel.value);
   addEventListener("hashchange", () => loadRegion(location.hash.slice(1)));
-  $("tour-btn").onclick = () => tour();
+  $("listen-all").onclick = () => listenAll();
   // 3D-глобус: окремий модуль з CDN; якщо не завантажиться — лишається 2D-текстура
   import("./globe.js")
     .then((m) => { globe = m.createGlobe($("earth-orb"), "/static/img/earth_ndvi.jpg"); focusGlobe(videos.find((x) => x.id === current)); })
     .catch(() => {});
   await loadRegion(location.hash.slice(1));
-})().catch((e) => document.body.insertAdjacentHTML("afterbegin", `<p style="position:fixed;z-index:99;color:#f88;padding:16px">Помилка: ${e.message}</p>`));
+})().catch((e) => document.body.insertAdjacentHTML("afterbegin", `<p style="position:fixed;z-index:99;color:#f88;padding:16px">Error: ${e.message}</p>`));

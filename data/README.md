@@ -42,6 +42,8 @@ curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a00550
 - `ndvi_world`: уся суша без Антарктиди й Гренландії, зважено площею, ручні пороги звуку;
 - `ndvi_north_america`: ручні пороги (на ній налаштовували звук), без зважування;
 - `ndvi_south_america`, `ndvi_eurasia`, `ndvi_africa`, `ndvi_australia`: зважено площею, **автокалібрування порогів** (`auto_ranges`). Межа Африка/Євразія проходить по Червоному морю (сходинками через `exclude`).
+- `ndvi_europe` (lon −10…40, lat 72…37) і `ndvi_asia` (lon 40…180, lat 78…−11, без Східної Африки): окремі регіони для гри. Порахувати: `python -m pipeline.run ndvi_europe` і `python -m pipeline.run ndvi_asia`.
+- У грі (`/`) показано лише Whole Earth, North America, Europe, Asia: у південній півкулі й тропіках грудень і червень звучать майже однаково.
 
 Порахувати всі: `venv/bin/python -m pipeline.run_all` (~30 с).
 

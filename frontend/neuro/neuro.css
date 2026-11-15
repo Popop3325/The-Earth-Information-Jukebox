@@ -34,6 +34,7 @@ html:has(.game-page), .game-page { margin:0; min-height:100%; background:#080d0e
 .mixer { position:relative; z-index:30; font-size:11px; color:#edf3ec; }
 .mixer summary { cursor:pointer; list-style:none; padding:6px 9px; border-radius:7px; background:#09110f8c; user-select:none; }
 .mixer summary::-webkit-details-marker { display:none; }
+.mixer summary::marker { content:""; }
 .mixer summary span { margin-left:3px; }
 .mixer-panel { position:absolute; top:34px; right:0; width:260px; padding:10px 12px; background:#101817f2; border:1px solid #ffffff22; border-radius:10px; box-shadow:0 12px 35px #0008; backdrop-filter:blur(16px); }
 .track-control { display:grid; grid-template-columns:82px 1fr 32px; gap:8px; align-items:center; min-height:34px; color:#e0e9e1; font-size:11px; }
@@ -121,52 +122,93 @@ canvas#sky { position:absolute; inset:0; width:100%; height:100%; display:block;
 #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .8s ease; }
 #view.locked { filter: blur(16px) brightness(.4); }
 
-/* Хедер: вибір регіону ліворуч */
-.game-header { justify-content: space-between; height: 52px; }
-.region-pick { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #dfe9df; text-shadow: 0 1px 6px #000; }
-.region-pick select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid #ffffff33;
-  background: #09110fd9; color: #edf3ec; cursor: pointer; }
+/* ---------- Хедер: усі елементи керування однієї висоти, на одній лінії ---------- */
+.game-header { justify-content: space-between; height: 60px; gap: 12px; }
+.header-tools { gap: 10px; }
+.ctl { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 1px solid #ffffff2e;
+  border-radius: 10px; background: #09110fd9; color: #edf3ec; font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+  box-sizing: border-box; backdrop-filter: blur(8px); }
+.ctl:hover { background: #1a2723; }
+.region-pick.ctl { padding: 0 6px 0 14px; cursor: default; text-shadow: none; }
+.region-pick.ctl > span { color: #b9c8bd; font-size: 13px; }
+.region-pick select { height: 32px; font: inherit; font-size: 14px; padding: 0 8px; border: 0; border-radius: 7px; background: #ffffff12; color: #edf3ec; cursor: pointer; }
 .region-pick select:focus-visible { outline: 2px solid var(--g-focus); outline-offset: 2px; }
+.listen-all { padding: 0 16px; font-size: 15px; font-weight: 600; border-color: #b5e58e66; }
+.listen-all .ico { font-size: 17px; }
+.listen-all kbd, .bell-button kbd { font: 11px ui-monospace, monospace; color: #aab9ad; border: 1px solid #ffffff33; border-radius: 4px; padding: 2px 5px; }
+.icon-only { width: 40px; padding: 0; justify-content: center; font-size: 17px; }
+/* «Звук»: без зовнішньої рамки details/summary — така сама кнопка, як інші */
+.mixer { font-size: 14px; margin: 0; border: 0; padding: 0; display: block; }   /* style.css давав рамку #2a3354 і відступ 12px */
+.game-page .game-header { max-width: none; margin: 0; }
+.mixer, .mixer summary { outline: none; }
+.mixer summary.ctl { list-style: none; padding: 0 14px; border-radius: 10px; }
+.mixer[open] summary.ctl { background: #1a2723; }
+.mixer summary.ctl:focus-visible { outline: 2px solid var(--g-focus); outline-offset: 2px; }
+.mixer-panel { top: 48px; width: 300px; }
+.track-control { font-size: 13px; grid-template-columns: 110px 1fr 40px; }
 
-/* «Пропустити вступ» — видно, поки йде історія */
-.skip-intro { position: fixed; z-index: 40; right: 18px; bottom: 18px; border: 1px solid #ffffff40; border-radius: 999px;
-  padding: 8px 14px; background: #09110fcc; color: #edf3ec; font: inherit; font-size: 13px; cursor: pointer; transition: opacity .4s; }
-.skip-intro:hover { background: #1b2a24; }
-.skip-intro.gone { opacity: 0; pointer-events: none; }
+/* ---------- Нижня смуга гри (нейрони): 28% висоти ---------- */
+.game-shell { --band: 28%; }
+#screen { inset: 0 0 var(--band) 0; }
+.game-shell:not(.intro-mode) .neuron-stage { clip-path: inset(calc(100% - var(--band)) 0 0 0);
+  background: linear-gradient(180deg, transparent calc(100% - var(--band) - .3%), #0b1210df calc(100% - var(--band)), #080d0ef7 100%); }
+.neuron-stage:before { top: calc(100% - var(--band)); }
+/* Нейрони лише в грі: на екрані планети їх не видно */
+.intro-mode .neuron-stage, .story-title-mode .neuron-stage { opacity: 0; pointer-events: none; }
+.neuron-stage { transition: opacity .6s ease; }
+.story-sticky.story-title-mode .game-shell .neuron-stage, .story-title-mode .neuron-stage { clip-path: inset(calc(100% - var(--band)) 0 0 0); }
+@media (max-height: 600px) { #screen { bottom: var(--band); } }
 
-/* Більший текст: проєкт про доступність, у т. ч. для людей зі слабким зором */
-#q-float { font-size: 15px; padding: 9px 13px; max-width: min(80vw, 640px); }
-#hint { font-size: 13px; }
+/* Відео проявляється разом із прокруткою від планети */
+.game-shell #screen, .intro-mode #screen, .story-title-mode #screen, .story-app-mode #screen {
+  opacity: var(--map-reveal, 0); transform: scale(calc(1.06 - var(--map-reveal, 0) * .06));
+  filter: blur(calc((1 - var(--map-reveal, 0)) * 14px)); transition: none; }
+
+/* Питання — ліворуч угорі смуги; дзвіночок — посередині вгорі смуги (одразу під відео) */
+#q-float { top: calc(100% - var(--band) + 12px); bottom: auto; left: clamp(12px, 2.4vw, 34px); transform: none;
+  max-width: min(34vw, 420px); font-size: 16px; font-weight: 600; padding: 9px 13px; text-align: left; z-index: 7; }
+.bell-button { position: absolute; z-index: 7; top: calc(100% - var(--band) + 10px); left: 50%; transform: translateX(-50%);
+  height: 40px; gap: 8px; padding: 0 16px; font-size: 14px; border-radius: 999px; border-color: #ffd34d55; background: #101817e6;
+  transition: box-shadow .4s ease; }
+.bell-button:hover { background: #1a2723; }
+#bell-icon { font-size: 17px; }
+.bell-button.ringing { animation: bell-glow 3s ease-out; }
+@keyframes bell-glow { 0% { box-shadow: 0 0 0 0 #ffd34d00; } 12% { box-shadow: 0 0 26px 10px #ffd34d88; } 100% { box-shadow: 0 0 60px 26px #ffd34d00; } }
+
+/* Кнопка «Listen» під нейронами поточної пари */
+.node-play { position: absolute; top: 34px; left: 0; transform: translateX(-50%); white-space: nowrap; height: 28px; padding: 0 10px;
+  border: 1px solid #ffffff38; border-radius: 999px; background: #101817e6; color: #e6efe6; font: inherit; font-size: 12px; cursor: pointer; }
+.node-play:hover { background: #22332c; }
+.node-wrap:not(.is-current) .node-play { display: none; }
+.node-wrap.playing .node-play { border-color: var(--g-accent); color: var(--g-accent); }
+.intro-mode .node-play { pointer-events: none; }
+
+#hint { font-size: 13px; bottom: 2px; }
 #score { font-size: 12px; }
 .node-lbl { font-size: 12px; }
-.bell-button { font-size: 13px; padding: 6px 10px; }
-.bell-button kbd { font-size: 11px; }
 #caption { font-size: 14px; }
-.map-tag { font-size: 11px; }
-.mixer, .track-control { font-size: 13px; }
-.mixer-panel { width: 300px; }
-.track-control { grid-template-columns: 110px 1fr 40px; }
+.map-tag { font-size: 11px; bottom: 14px; }
 .planet-copy { font-size: clamp(15px, 1.6vw, 19px); }
-@media (max-width: 600px) { .node-lbl { font-size: 10px; max-width: 46px; } #q-float { font-size: 13px; } #hint { font-size: 11px; } }
-
-/* Заголовок читається, коли нейрони кружляють навколо планети */
 .planet-title h1, .planet-title .eyebrow, .planet-copy { text-shadow: 0 3px 24px #000, 0 0 4px #000; }
+@media (max-width: 600px) {
+  .node-lbl { font-size: 10px; max-width: 46px; }
+  #q-float { font-size: 13px; max-width: 44vw; }
+  .bell-button > span:nth-child(2), .bell-button kbd, .listen-all kbd, .region-pick.ctl > span { display: none; }
+  .listen-all .lbl { font-size: 13px; }
+  .ctl { padding: 0 10px; }
+  .node-play { font-size: 0; width: 28px; padding: 0; } .node-play span { font-size: 12px; }
+}
 
-/* Питання — над стрічкою нейронів (не накриває підписи періодів) */
-#q-float { top: auto; bottom: calc(20% + 14px); left: 50%; transform: translateX(-50%); text-align: center; z-index: 7; }
-.map-tag { bottom: calc(20% + 14px); }
-@media (max-width: 600px) { #q-float { bottom: calc(20% + 44px); width: calc(100vw - 24px); max-width: none; } }
-
-/* 3D-глобус (three.js) замість 2D-текстури; хмари-смуги не потрібні */
-.globe-canvas { position: absolute; z-index: 1; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+/* ---------- 3D-глобус ---------- */
+.globe-canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border-radius: 50%; z-index: 1; }
 .earth-orb.model-ready .earth-clouds { display: none; }
 .earth-orb.model-ready { background: transparent; }
 .earth-orb.model-ready:before { opacity: .35; }
 
-/* Коротша історія: менше прокрутки до гри */
-.story-track { height: 220svh; }
-
-/* Кнопка «Екскурсія без рук» */
-.tour-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 10px; }
-.tour-btn kbd { font: 11px ui-monospace, monospace; color: #aab9ad; border: 1px solid #ffffff33; border-radius: 4px; padding: 0 4px; }
-@media (max-width: 600px) { .tour-btn { font-size: 0; gap: 0; } .tour-btn::before { content: "🎧"; font-size: 16px; } .tour-btn kbd { display: none; } }
+/* ---------- Одна прокрутка: планета → гра (з «прилипанням») ---------- */
+.story-track { height: 200svh; }
+html:has(.game-page) { scroll-snap-type: y mandatory; }
+.snap-point { position: absolute; left: 0; width: 1px; height: 100svh; scroll-snap-align: start; pointer-events: none; }
+.snap-top { top: 0; }
+.snap-game { top: 100svh; }
+.earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }

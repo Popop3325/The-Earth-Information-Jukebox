@@ -276,6 +276,101 @@
       }
     },
     {
+      "id": "ndvi_asia",
+      "title": "Asia (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          40,
+          180
+        ],
+        "lat": [
+          78,
+          -11
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        2503,
+        137,
+        1593,
+        1012
+      ],
+      "exclude": [
+        [
+          2503,
+          842,
+          137,
+          307
+        ]
+      ],
+      "_crop_note": "lon 40..180, lat 78..-11; виключено Східну Африку (Сомалі, Кенія)",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      }
+    },
+    {
+      "id": "ndvi_europe",
+      "title": "Europe (NDVI)",
+      "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",
+      "svs_page": "https://svs.gsfc.nasa.gov/5544/",
+      "video_url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005544/nrt_ndvi_equi_2048p30.mp4",
+      "video_note": "4096x2048, 58 МБ, без підпису дати. Сторінка оновлюється: зберігайте саме цю версію (900 дат у data/sources/ndvi_dates.txt)",
+      "raw_file": "ndvi_global.mp4",
+      "extractors": [
+        "ndvi"
+      ],
+      "timeline": {
+        "dates_file": "data/sources/ndvi_dates.txt"
+      },
+      "geo": {
+        "lon": [
+          -10,
+          40
+        ],
+        "lat": [
+          72,
+          37
+        ],
+        "area_weighted": true
+      },
+      "crop": [
+        1934,
+        205,
+        569,
+        398
+      ],
+      "exclude": [],
+      "_crop_note": "lon -10..40, lat 72..37: без Північної Африки (межа ~37°N)",
+      "keyframes": "quarterly",
+      "preset": "seasons",
+      "sample_fps": 10,
+      "auto_ranges": true,
+      "quiz": {
+        "subject": "vegetation",
+        "metric": "ndvi_mean",
+        "grows_with_metric": true,
+        "min_diff": 0.03
+      }
+    },
+    {
       "id": "ndvi_africa",
       "title": "Africa (NDVI)",
       "source": "NASA SVS 5544: Near Real-Time NDVI (SNPP VIIRS), equirectangular. Кадр = 1 день, 30 днів на секунду.",

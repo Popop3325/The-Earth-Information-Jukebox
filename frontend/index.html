@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,51 +9,53 @@
   <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
 </head>
 <body class="game-page">
-  <!-- Дизайн: архів команди (scroll-історія). Логіка: /static/neuro/main.js. Попередній джукбокс: /static/classic.html -->
-  <button id="skip-intro" class="skip-intro" type="button">Пропустити вступ ↓</button>
-
+  <!-- Design: team archive. Logic: /static/neuro/main.js. Previous jukebox: /static/classic.html -->
   <div class="story-track" id="story-track">
+    <span class="snap-point snap-top" aria-hidden="true"></span>
+    <span class="snap-point snap-game" aria-hidden="true"></span>
     <div class="story-sticky">
       <div class="game-shell intro-mode" id="game-shell">
         <header class="game-header">
-          <label class="region-pick">Регіон <select id="region-select" aria-label="Оберіть регіон"></select></label>
+          <label class="region-pick ctl"><span>Continent</span> <select id="region-select" aria-label="Choose a continent"></select></label>
           <div class="header-tools">
-            <button id="tour-btn" class="icon-button tour-btn" type="button" aria-keyshortcuts="T">🎧 Екскурсія без рук <kbd>T</kbd></button>
+            <button id="listen-all" class="ctl listen-all" type="button" aria-keyshortcuts="Enter" aria-label="Listen to the whole period, 2023 to 2026">
+              <span class="ico" aria-hidden="true">🎧</span><span class="lbl">Listen to all</span><kbd aria-hidden="true">Enter</kbd>
+            </button>
             <details class="mixer">
-              <summary aria-label="Налаштувати гучність звуків">♫ <span>Звук</span></summary>
-              <div class="mixer-panel" aria-label="Гучність звуків">
-                <label class="track-control"><span><input type="checkbox" data-track-enabled="wind" checked> Вітер</span><input type="range" min="0" max="100" value="100" data-track-volume="wind" aria-label="Гучність вітру"><output>100%</output></label>
-                <label class="track-control"><span><input type="checkbox" data-track-enabled="chimes" checked> Дзвіночки</span><input type="range" min="0" max="100" value="100" data-track-volume="chimes" aria-label="Гучність дзвіночків"><output>100%</output></label>
-                <label class="track-control"><span><input type="checkbox" data-track-enabled="birds" checked> Птахи</span><input type="range" min="0" max="100" value="100" data-track-volume="birds" aria-label="Гучність птахів"><output>100%</output></label>
-                <label class="track-control"><span><input type="checkbox" data-track-enabled="music" checked> Музика</span><input type="range" min="0" max="100" value="100" data-track-volume="music" aria-label="Гучність музики: мелодія, фон, капель, дерево"><output>100%</output></label>
+              <summary class="ctl" aria-label="Sound volumes"><span aria-hidden="true">♫</span> <span>Sound</span></summary>
+              <div class="mixer-panel" aria-label="Sound volumes">
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="wind" checked> Wind</span><input type="range" min="0" max="100" value="100" data-track-volume="wind" aria-label="Wind volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="chimes" checked> Chimes</span><input type="range" min="0" max="100" value="100" data-track-volume="chimes" aria-label="Chimes volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="birds" checked> Birds</span><input type="range" min="0" max="100" value="100" data-track-volume="birds" aria-label="Birds volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="music" checked> Music</span><input type="range" min="0" max="100" value="100" data-track-volume="music" aria-label="Music volume: melody, pad, drips, wood"><output>100%</output></label>
               </div>
             </details>
-            <button id="voice-toggle" class="icon-button" type="button" aria-label="Вимкнути озвучення">🔊</button>
+            <button id="voice-toggle" class="ctl icon-only" type="button" aria-label="Turn voice off" aria-pressed="true">🔊</button>
           </div>
         </header>
 
         <main>
-          <section id="screen" aria-label="Супутникова візуалізація рослинності (NASA NDVI)">
+          <section id="screen" aria-label="NASA satellite view of vegetation (NDVI)">
             <video id="video" muted playsinline preload="auto"></video>
-            <canvas id="view" class="locked" role="img" aria-label="Відео NASA: обраний регіон"></canvas>
+            <canvas id="view" class="locked" role="img" aria-label="NASA video of the chosen region"></canvas>
             <div id="screen-overlay">
-              <p id="overlay-text">Зміни Землі — у звуці</p>
+              <p id="overlay-text">Earth's changes, in sound</p>
               <button id="overlay-btn" class="start-button" type="button" style="display:none;"></button>
             </div>
             <div id="caption" aria-hidden="true"></div>
             <span class="map-tag" id="map-tag">NASA · NDVI</span>
           </section>
 
-          <section class="neuron-stage" aria-label="Часова лінія: періоди-нейрони">
+          <section class="neuron-stage" aria-label="Timeline: six months, five pairs">
             <canvas id="sky" aria-hidden="true"></canvas>
             <div id="q-float" class="hidden"></div>
-            <div id="nodes" aria-label="Періоди. Оберіть відповідь або прослухайте період"></div>
+            <button id="bell-box" class="bell-button" type="button" aria-keyshortcuts="Space" aria-label="Ring the bell: let nature answer for this pair">
+              <span id="bell-icon" aria-hidden="true">🔔</span><span>Ring the bell</span><kbd aria-hidden="true">Space</kbd>
+            </button>
+            <div id="nodes" aria-label="Months. Listen to each, then choose the answer"></div>
           </section>
 
           <footer class="game-footer">
-            <button id="bell-box" class="bell-button hidden" type="button" aria-label="Ехо: прослухати відрізок без відповіді">
-              <span id="bell-icon">🔔</span><span>Ехо</span><kbd>Space</kbd>
-            </button>
             <p id="hint" aria-live="polite"></p>
             <p id="score" class="note"></p>
           </footer>
@@ -67,8 +69,9 @@
         </div>
         <p class="eyebrow">NASA SPACE APPS CHALLENGE</p>
         <h1>The Earth<br>Information Jukebox</h1>
-        <p class="planet-copy">Планета звучить. Прислухайся до її змін.</p>
-        <span class="scroll-cue">ПРОКРУТІТЬ, ЩОБ ДОСЛІДЖУВАТИ <b>↓</b></span>
+        <p class="planet-copy">The planet makes sound. Listen to how it changes.</p>
+        <p class="sr-only">Press Space to ring the bell and hear nature answer, or Enter to listen to the whole story from 2023 to 2026.</p>
+        <span class="scroll-cue" aria-hidden="true">SCROLL TO EXPLORE <b>↓</b></span>
       </section>
     </div>
   </div>
