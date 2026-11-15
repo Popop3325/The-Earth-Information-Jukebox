@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Earth Information Jukebox</title>
+  <link rel="stylesheet" href="static/style.css">
+  <link rel="stylesheet" href="static/neuro/neuro.css">
+  <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
+</head>
+<body class="game-page">
+  <!-- Design: team archive. Logic: /static/neuro/main.js -->
+  <div class="story-track" id="story-track">
+    <span class="snap-point snap-top" aria-hidden="true"></span>
+    <span class="snap-point snap-game" aria-hidden="true"></span>
+    <div class="story-sticky">
+      <div class="game-shell intro-mode" id="game-shell">
+        <header class="game-header">
+          <label class="region-pick ctl"><span>Continent</span> <select id="region-select" aria-label="Choose a continent"></select></label>
+          <div class="header-tools">
+            <button id="listen-all" class="ctl listen-all" type="button" aria-keyshortcuts="Enter" aria-label="Listen to the whole period, 2023 to 2026">
+              <span class="ico" aria-hidden="true">🎧</span><span class="lbl">Listen to all</span><kbd aria-hidden="true">Enter</kbd>
+            </button>
+            <details class="mixer">
+              <summary class="ctl" aria-label="Sound volumes"><span aria-hidden="true">♫</span> <span>Sound</span></summary>
+              <div class="mixer-panel" aria-label="Sound volumes">
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="wind" checked> Wind</span><input type="range" min="0" max="100" value="100" data-track-volume="wind" aria-label="Wind volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="chimes" checked> Chimes</span><input type="range" min="0" max="100" value="100" data-track-volume="chimes" aria-label="Chimes volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="birds" checked> Birds</span><input type="range" min="0" max="100" value="100" data-track-volume="birds" aria-label="Birds volume"><output>100%</output></label>
+                <label class="track-control"><span><input type="checkbox" data-track-enabled="music" checked> Music</span><input type="range" min="0" max="100" value="100" data-track-volume="music" aria-label="Music volume: melody, pad, drips, wood"><output>100%</output></label>
+              </div>
+            </details>
+            <button id="voice-toggle" class="ctl icon-only" type="button" aria-label="Turn voice off" aria-pressed="true">🔊</button>
+          </div>
+        </header>
+
+        <main>
+          <section id="screen" aria-label="NASA satellite view of vegetation (NDVI)">
+            <div id="view" class="locked" role="img" aria-label="NASA video of the chosen region">
+              <video id="video" muted playsinline preload="auto"></video>
+            </div>
+            <div id="screen-overlay">
+              <p id="overlay-text">Earth's changes, in sound</p>
+              <button id="overlay-btn" class="start-button" type="button" style="display:none;"></button>
+            </div>
+            <div id="caption" aria-hidden="true"></div>
+            <span class="map-tag" id="map-tag">NASA · NDVI</span>
+          </section>
+
+          <section class="neuron-stage" aria-label="Timeline: six months, five pairs">
+            <canvas id="sky" aria-hidden="true"></canvas>
+            <div id="q-float" class="hidden"></div>
+            <button id="bell-box" class="bell-button" type="button" aria-keyshortcuts="Space" aria-label="Ring the bell: let nature answer for this pair">
+              <span id="bell-icon" aria-hidden="true">🔔</span><span>Ring the bell</span><kbd aria-hidden="true">Space</kbd>
+            </button>
+            <div id="nodes" aria-label="Months. Listen to each, then choose the answer"></div>
+          </section>
+
+          <footer class="game-footer">
+            <p id="hint" aria-live="polite"></p>
+            <p id="score" class="note"></p>
+          </footer>
+        </main>
+      </div>
+
+      <section class="planet-title" id="planet-title" aria-label="The Earth Information Jukebox">
+        <canvas class="starfield" aria-hidden="true"></canvas>
+        <canvas class="starfield starfield-b" aria-hidden="true"></canvas>
+        <div class="earth-orb" id="earth-orb" aria-hidden="true">
+          <div class="earth-texture"></div>
+          <div class="earth-clouds"></div>
+        </div>
+        <p class="eyebrow">NASA SPACE APPS CHALLENGE</p>
+        <h1>The Earth<br>Information Jukebox</h1>
+        <p class="planet-copy">The planet makes sound. Listen to how it changes.</p>
+        <!-- ОПИС ПРОЄКТУ на стартовому екрані: замініть текст тут (frontend/index.html, клас planet-about) -->
+        <p class="planet-about">We turn NASA’s satellite data about Earth into sound. Nature loves to speak. Do you listen to it? Lean in, answer its questions, and see these changes for yourself. Turn to nature and find the answers to your questions.</p>
+        <!-- ПІДКАЗКИ КЛАВІАТУРИ на стартовому екрані (знизу ліворуч) -->
+        <dl class="key-hints" aria-label="Keyboard controls">
+          <div><dt><kbd>Space</kbd></dt><dd>ring the bell — nature opens the next period</dd></div>
+          <div><dt><kbd>Enter</kbd></dt><dd>listen to the whole story (audio)</dd></div>
+          <div><dt><kbd>1</kbd> <kbd>2</kbd></dt><dd>choose the first or second month</dd></div>
+          <div><dt><kbd>R</kbd></dt><dd>replay the last opened period</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>stop the sound</dd></div>
+        </dl>
+        <span class="scroll-cue" aria-hidden="true">SCROLL TO EXPLORE <b>↓</b></span>
+      </section>
+    </div>
+  </div>
+
+  <!-- ТРЕТІЙ ЕКРАН (після гри): текст проєкту, під ним — кредити (джерела даних і звуків).
+       Текст есе — у <div class="about-essay">, кредити — у <footer class="about-credits">. -->
+  <section class="about-page" id="about" aria-labelledby="about-title" tabindex="-1">
+    <div class="about-inner">
+      <article class="about-essay">
+        <p class="about-kicker">About the project</p>
+        <h2 id="about-title">What if we listened first, and only then&nbsp;saw?</h2>
+        <p class="about-lead">We usually get to know the world through sight: we examine a map, and only afterwards notice how it all sounds. This project reverses the order of perception: first, listen to the Earth, sense the movement of its changes and try to make sense of what you hear, and only then reveal its visual counterpart.</p>
+        <p>Before you is NASA satellite data on Earth’s vegetation. Its first form is sound. The project rests on real measurements: for each frame, we calculate the share of snow, vegetation and bare ground, NDVI, and the shifts of the seasons. The data is then sonified through artistic interpretation: birds, wind and other sounds built on the associations we draw with environmental changes. You can listen to the whole planet or choose a single region: North America, Europe or Asia.</p>
+        <p>At the bottom of the screen, neurons glow: each holds the sound of a particular period. As in thought, they take on meaning through connections. A question arises between two neurons: you listen to both fragments, notice the differences, and choose the neuron that answers it. The right answer completes the connection and opens the transition – the very movement from one state of nature to another – and then the image gradually unfolds. When every connection is made, the whole story of the period opens. Here, sound is the primary instrument of understanding.</p>
+        <p>Every state has its own voice. Winter arrives with a blizzard: the more snow, the denser its whistle, while a low drone echoes it. In spring, the blizzard gives way to the drip of meltwater, the wind grows warmer, and birds return – an image of migration and homecoming. The flute becomes the voice of direction: it rises as vegetation grows and falls as it declines. The chimes speak of vegetation’s presence and ring clearer as it flourishes. Summer grows lighter, and autumn brings a dry wind and sparse wooden clicks where the ground lies bare.</p>
+        <p>At the center of this world is the human being. Our relationship with nature is often viewed through the lens of responsibility and the damage we cause. We are more interested in the nature of this connection itself: a person exists within a shared system, woven into it through countless mutual dependencies, and their presence becomes part of the soundscape of the surrounding world. This idea is embodied by the Bell, which represents the human being. It rings apart from the vegetation’s chimes: you send nature your own «I am here,» and nature answers with the sound of that period. The Bell is both a person’s independent voice and a thread to nature: through its response the neurons connect, and with them, the human and the world.</p>
+        <p>For blind and low-vision people, the Bell becomes a path of its own: it can be used right away, without answering any questions, and the neurons connect on their own. A person sends nature their signal and receives a response, without needing to rely on sight.</p>
+        <p class="about-closing">The project invites you to slow down and listen to the changes of the planet. First, the Earth finds its voice. And only then do we see what it has been saying.</p>
+      </article>
+
+      <footer class="about-credits" aria-labelledby="credits-title">
+        <h3 id="credits-title">Credits</h3>
+        <dl>
+          <div>
+            <dt>Data</dt>
+            <dd>
+              <p>NASA Scientific Visualization Studio, <a href="https://svs.gsfc.nasa.gov/5544" target="_blank" rel="noopener">Near Real-Time NDVI (SVS 5544)</a>, from the VIIRS instrument on the Suomi NPP satellite, 27 December 2023 – 13 June 2026, one frame per day.</p>
+              <p class="about-note">This is an artistic sonification for exploring and learning, not a scientific measurement. Values are estimated from the colours of the visualization, and near-real-time satellite data may contain clouds and gaps.</p>
+            </dd>
+          </div>
+          <div>
+            <dt>Sounds</dt>
+            <dd>
+              <p>«<a href="https://freesound.org/people/dibko/sounds/801278/" target="_blank" rel="noopener">Sounds of the forest and the settlement</a>» by dibko, licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>;
+                «<a href="https://freesound.org/people/kwahmah_02/sounds/259246/" target="_blank" rel="noopener">Gust of Wind 7</a>» by kwahmah_02, licensed under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.
+                Both via freesound.org, edited. All other sounds are synthesised in the browser with Tone.js.</p>
+            </dd>
+          </div>
+          <div>
+            <dt>Use of AI</dt>
+            <dd>
+              <p>The code was written with the help of an AI coding assistant (Claude by Anthropic); the synthesised sounds are generated by that code. The team designed the game, the questions and the sound mapping. The essay was written by the team without AI; only its translation was automated. No images or video are AI‑generated.</p>
+            </dd>
+          </div>
+          <div>
+            <dt>Team</dt>
+            <dd>
+              <p><strong>Frog Coders</strong> — Oleksii Lytvyn, Karina Avramenko, Daria Shuryha, Nikita Melnikov, Fedir Dovhopol.
+                NASA Space Apps Challenge 2026.</p>
+              <p><a href="https://github.com/Popop3325/The-Earth-Information-Jukebox" target="_blank" rel="noopener">Source code on GitHub</a> · MIT License</p>
+            </dd>
+          </div>
+        </dl>
+        <p class="about-back"><a href="#" id="back-to-game">↑ Back to the game</a></p>
+      </footer>
+    </div>
+  </section>
+
+  <div id="announce" class="sr-only" role="status" aria-live="polite"></div>
+  <script type="module" src="static/neuro/main.js"></script>
+</body>
+</html>
