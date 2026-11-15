@@ -237,25 +237,26 @@ function buildGame() {
 
 const periodText = (p) => `${neurons[p.a].full} — ${neurons[p.b].full}`;
 
-/** Показати стан поточної пари: питання ліворуч, дзвіночок, замкнене вікно */
-function showPairState({ speakIt = false } = {}) {
+const HOW_TO = "Listen to both months and choose one — or ring the bell 🔔 to open this period";
+
+/** Показати стан пари: ПИТАННЯ — великим у вікні відео (головне), підказка «як грати» — у рамці ліворуч над нейронами */
+function showPairState() {
   const g = game;
   if (listeningAll) return;            // «Listen to all» ще грає — стан пари покажемо після нього
   if (g.finished) return showFinished();
   const p = g.pairs[g.i];
   UI.lockScreen();
   UI.showPair(p.a, p.b);
-  UI.showQuestion(p.q.text);
+  UI.showQuestion(HOW_TO);
   UI.showBell(true);
   UI.showHint("");
   UI.setScore(`Pair ${g.i + 1} of ${g.pairs.length}`);
-  pairMessage("Answer the question — or ring the bell 🔔 to open this period");
-  const say = `Pair ${g.i + 1} of ${g.pairs.length}: ${periodText(p)}. ${p.q.text}`;
-  UI.announce(`${say} Press Space to ring the bell.`);
-  if (speakIt) UI.speak(say);
+  pairMessage(p.q.text);
+  // для скрінрідера (aria-live) — повний опис; голосом (TTS) говоримо лише часові проміжки
+  UI.announce(`Pair ${g.i + 1} of ${g.pairs.length}: ${periodText(p)}. ${p.q.text} Press Space to ring the bell.`);
 }
 
-/** Текст у вікні відео (+ кнопка «Replay» попереднього інтервалу, якщо він є) */
+/** Великий текст у вікні відео (+ кнопка «Replay» попереднього інтервалу, якщо він є) */
 function pairMessage(text) {
   if (game.last) UI.showMessage(text, `↻ Replay ${periodText(game.last)}`, replayLast);
   else UI.showMessage(text);
@@ -273,8 +274,8 @@ async function openInterval(viaBell) {
   if (viaBell) {
     UI.ringBell(); bowl();
     await sleep(BELL_PAUSE_MS);                         // природа слухає
-    if (!g.skip) await UI.speak(periodText(p));
-  } else earcon("ok");
+  } else { earcon("ok"); await sleep(350); }
+  if (!g.skip) await UI.speak(periodText(p));           // озвучка — лише часовий проміжок
   UI.link(p.a, p.b);
   if (!g.skip) {
     UI.unlockScreen(periodText(p));
@@ -282,8 +283,8 @@ async function openInterval(viaBell) {
     await playSegment(neurons[p.a].t, neurons[p.b].t, INTERVAL_SECONDS);
   }
   g.last = p; g.busy = false; g.errors = 0; g.i += 1;
-  if (g.i >= g.pairs.length) { g.finished = true; showFinished(true); }
-  else showPairState({ speakIt: true });
+  if (g.i >= g.pairs.length) { g.finished = true; showFinished(); }
+  else showPairState();
 }
 
 function replayLast() {
@@ -294,7 +295,7 @@ function replayLast() {
 }
 
 const STORY_OPEN = "The whole story is open. Press Enter to listen to the full sonification from 2023 to 2026.";
-function showFinished(speakIt = false) {
+function showFinished() {
   if (listeningAll) return;
   UI.lockScreen();
   UI.hideQuestion();
@@ -302,7 +303,6 @@ function showFinished(speakIt = false) {
   UI.setScore(game.firstTry ? `Answered: ${game.firstTry} of ${game.pairs.length}` : "");
   UI.showMessage("The whole story is open", "▶ Listen to 2023–2026  (Enter)", listenAll);
   UI.announce(STORY_OPEN);
-  if (speakIt) UI.speak(STORY_OPEN);
 }
 
 /** «Listen to all»: повна соніфікація 2023–2026 разом із відео (для незрячих — основний режим) */
@@ -316,6 +316,7 @@ async function listenAll() {
   UI.hideMessage(); UI.hideQuestion();
   const first = neurons[0], last = neurons[neurons.length - 1];
   UI.unlockScreen(`${first.full} — ${last.full}`);
+  UI.speak(`${first.full} — ${last.full}`);                 // озвучка — лише часовий проміжок
   UI.announce(`Playing the full sonification, ${first.full} to ${last.full}. Press Escape to stop.`);
   const done = await playSegment(0, features.duration_s - 0.05, features.duration_s / (score.playback_rate || 0.25));
   if (done) stopListeningAll(true);
@@ -343,16 +344,14 @@ const handlers = {
     stopListeningAll();
     if (i === p.correct) {
       if (g.errors === 0) g.firstTry += 1;
-      UI.speak("Yes!");
       openInterval(false);
     } else {
       UI.wrong(i);
       earcon("no");
       g.errors += 1;
       const msg = `Not quite. ${p.q.hint} Listen to both months again and choose once more — or ring the bell.`;
-      pairMessage(msg);
+      UI.showQuestion(msg);                       // питання лишається великим; підказка — у рамці ліворуч
       UI.announce(msg);
-      UI.speak(msg);
     }
   },
   onListen(i) {
@@ -369,7 +368,7 @@ const handlers = {
       g.skip = true; UI.stopSpeak(); stopPlayback();
       return;
     }
-    if (g.finished) { UI.ringBell(); bowl(); UI.announce(STORY_OPEN); UI.speak(STORY_OPEN); return; }
+    if (g.finished) { UI.ringBell(); bowl(); UI.announce(STORY_OPEN); return; }
     openInterval(true);
   },
   onTrack(track, vol, enabled) {
@@ -426,7 +425,9 @@ function focusGlobe(v) {
 }
 
 const inGame = () => !$("game-shell").classList.contains("intro-mode");
-const goToGame = () => { if (!inGame()) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); };
+// Позиція екрана гри = кінець «історії» (далі йде третій екран About)
+const gameTop = () => $("story-track").offsetHeight - innerHeight;
+const goToGame = () => { if (Math.abs(scrollY - gameTop()) > 4) window.scrollTo({ top: gameTop(), behavior: "smooth" }); };
 
 // Клавіатура. Головні дії — пробіл (дзвіночок) і Enter (слухати все): вони не конфліктують зі скрінрідерами
 // (NVDA/JAWS у режимі перегляду перехоплюють літери й цифри для навігації: F — поле форми, 1–6 — заголовки…).
@@ -450,6 +451,7 @@ window.addEventListener("keydown", (e) => {
 
 // Фокус клавіатурою/скрінрідером у грі, поки видно планету → прокрутити до гри
 $("game-shell").addEventListener("focusin", goToGame);
+$("back-to-game").onclick = (e) => { e.preventDefault(); goToGame(); };
 
 (async function init() {
   const all = await getJSON("/api/videos");

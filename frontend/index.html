@@ -73,11 +73,68 @@
         <p class="eyebrow">NASA SPACE APPS CHALLENGE</p>
         <h1>The Earth<br>Information Jukebox</h1>
         <p class="planet-copy">The planet makes sound. Listen to how it changes.</p>
-        <p class="sr-only">Press Space to ring the bell and hear nature answer, or Enter to listen to the whole story from 2023 to 2026.</p>
+        <!-- ОПИС ПРОЄКТУ на стартовому екрані: замініть текст тут (frontend/index.html, клас planet-about) -->
+        <p class="planet-about">We turn NASA satellite data on Earth's vegetation (NDVI, December 2023 – June 2026) into sound.
+          Snow becomes a winter wind, green land becomes birds and bells, spring thaw becomes dripping water —
+          so you can hear the seasons change across a continent, even with your eyes closed.</p>
+        <!-- ПІДКАЗКИ КЛАВІАТУРИ на стартовому екрані (знизу ліворуч) -->
+        <dl class="key-hints" aria-label="Keyboard controls">
+          <div><dt><kbd>Space</kbd></dt><dd>ring the bell — nature opens the next period</dd></div>
+          <div><dt><kbd>Enter</kbd></dt><dd>listen to the whole story, 2023–2026</dd></div>
+          <div><dt><kbd>1</kbd> <kbd>2</kbd></dt><dd>choose the first or second month</dd></div>
+          <div><dt><kbd>R</kbd></dt><dd>replay the last opened period</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd>stop the sound</dd></div>
+        </dl>
         <span class="scroll-cue" aria-hidden="true">SCROLL TO EXPLORE <b>↓</b></span>
       </section>
     </div>
   </div>
+
+  <!-- ТРЕТІЙ ЕКРАН (після гри): джерела, звуки, дисклеймер. ЗАГЛУШКА — текст замініть тут (frontend/index.html, секція #about).
+       Позначки [TODO] — те, що команда має вписати сама. -->
+  <section class="about-page" id="about" aria-labelledby="about-title">
+    <div class="about-inner">
+      <h2 id="about-title">About this project</h2>
+      <div class="about-grid">
+        <article>
+          <h3>Data</h3>
+          <p>NASA Scientific Visualization Studio, <a href="https://svs.gsfc.nasa.gov/5544/" target="_blank" rel="noopener">SVS 5544</a>:
+            Near Real-Time NDVI from the VIIRS instrument on Suomi NPP, 27 Dec 2023 – 13 Jun 2026, one frame per day.</p>
+          <p>Snow, bare land and green land are estimated from the colours of each frame of the video.</p>
+        </article>
+        <article>
+          <h3>How it sounds</h3>
+          <ul>
+            <li>Snow → winter wind (howling)</li>
+            <li>Green land → birds and wind chimes</li>
+            <li>Melting snow → dripping water</li>
+            <li>Autumn → dry wind and wooden clicks</li>
+            <li>Direction of change → a quiet flute rises or falls</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Sounds &amp; tools</h3>
+          <p>Bird and warm-wind recordings: [TODO: source and licence]. All other sounds are synthesised in the browser with Tone.js.</p>
+          <p>Built with three.js, Tone.js, FastAPI and OpenCV. [TODO: link to the code repository]</p>
+        </article>
+        <article>
+          <h3>Accessibility</h3>
+          <p>The game can be played without a screen: press Space to let nature answer, or Enter to hear everything.
+            Works with screen readers; every action has a keyboard shortcut.</p>
+        </article>
+        <article>
+          <h3>Disclaimer</h3>
+          <p>This is an artistic sonification for exploring and learning, not a scientific measurement.
+            Values are approximated from video colours; near-real-time data can contain clouds and gaps.</p>
+        </article>
+        <article>
+          <h3>Team</h3>
+          <p>NASA Space Apps Challenge 2026. [TODO: team name, members, contacts]</p>
+        </article>
+      </div>
+      <p class="about-back"><a href="#" id="back-to-game">↑ Back to the game</a></p>
+    </div>
+  </section>
 
   <div id="announce" class="sr-only" role="status" aria-live="polite"></div>
   <script type="module" src="/static/neuro/main.js"></script>
