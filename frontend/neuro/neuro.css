@@ -177,7 +177,8 @@ canvas#sky { position:absolute; inset:0; width:100%; height:100%; display:block;
 
 /* Кнопка «Listen» під нейронами поточної пари */
 .node-play { position: absolute; top: 34px; left: 0; transform: translateX(-50%); white-space: nowrap; height: 28px; padding: 0 10px;
-  border: 1px solid #ffffff38; border-radius: 999px; background: #101817e6; color: #e6efe6; font: inherit; font-size: 12px; cursor: pointer; }
+  border: 1px solid #ffffff38; border-radius: 999px; background: #101817e6; color: #e6efe6; font: inherit; font-size: 12px; cursor: pointer;
+  pointer-events: auto; z-index: 1; }   /* #nodes має pointer-events:none — кнопці треба явно дозволити кліки */
 .node-play:hover { background: #22332c; }
 .node-wrap:not(.is-current) .node-play { display: none; }
 .node-wrap.playing .node-play { border-color: var(--g-accent); color: var(--g-accent); }
