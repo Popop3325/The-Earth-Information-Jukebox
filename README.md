@@ -64,3 +64,9 @@ curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a00550
 
 - **Хто що робить, таймлайн і промпти для ШІ:** [docs/TEAM.md](docs/TEAM.md), задачі кожного в [docs/tasks/](docs/tasks/)
 - **Як працювати з git:** [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+
+## Credits
+
+- **Data:** NASA Scientific Visualization Studio, [Near Real-Time NDVI (SVS 5544)](https://svs.gsfc.nasa.gov/5544/)
+- **Sounds:** "Sounds of the forest and the settlement" by [dibko](https://freesound.org/people/dibko/) (CC BY 4.0), "Gust of Wind 7" by [kwahmah_02](https://freesound.org/people/kwahmah_02/) (CC BY 3.0), via freesound.org, edited. Details: [frontend/sounds/CREDITS.md](frontend/sounds/CREDITS.md)
+- **Libraries:** Tone.js, three.js, FastAPI, OpenCV

@@ -1,8 +1,10 @@
-# Звуки
+# Sound credits
 
-| Файл | Що це | Джерело |
-|---|---|---|
-| `birds.m4a`, `wind.m4a` | з прототипу гри (стиснуто з WAV) | прототип команди. TODO: вказати першоджерело й ліцензію |
-| `wind_warm.m4a` | м'який весняно-літній вітер, петля 66 с (фрагмент 35–105 с, склейка 4 с) | файл команди `wind (1).wav`. TODO: вказати першоджерело й ліцензію |
+Recorded sounds used in the sonification:
 
-Синтезовані звуки (хуртовина, дзвони, духовий голос, лід, дерево, дрон) генеруються в браузері: `frontend/winds.js`, `frontend/player.js`.
+| File | Original sound | Author | License | Changes |
+|---|---|---|---|---|
+| `birds.m4a` | [20250419 - 01 - H5 - MSH-6 - Maribor - Sounds of the forest and the settlement](https://freesound.org/people/dibko/sounds/801278/) | [dibko](https://freesound.org/people/dibko/) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | excerpt, volume normalized, converted to AAC |
+| `wind_warm.m4a` | [Gust of Wind 7.wav](https://freesound.org/people/kwahmah_02/sounds/259246/) | [kwahmah_02](https://freesound.org/people/kwahmah_02/) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | excerpt 35–105 s, looped (4 s crossfade), converted to AAC |
+
+All other sounds (winter wind, dry wind, wind chimes, drips, wooden clicks, flute voice, chords, drone, the human bell) are synthesized in the browser with Tone.js: `frontend/player.js`, `frontend/winds.js`, `frontend/neuro/main.js`.
