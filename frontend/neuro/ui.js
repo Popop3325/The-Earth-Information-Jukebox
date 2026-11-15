@@ -116,9 +116,28 @@ export const UI = {
     // Одна прокрутка: планета з назвою → (свайп) → відео й гра. Без вступної анімації нейронів.
     const shell = $("game-shell"), sticky = document.querySelector(".story-sticky"), track = $("story-track");
     let wasApp = false;
+    // Плавний перехід: прокрутка (і snap браузера) задає лише ціль, а видимий прогрес
+    // м'яко «доїжджає» до неї (~1.5 с), тож свайп не смикає картинку.
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    // Пружина з критичним згасанням: м'який старт і м'яка зупинка.
+    const STORY_W = 6.0;                  // жорсткість: менше — повільніше (6.0 ≈ перехід ~0.6 с, 2.0 ≈ ~1.6 с)
+    let shownP = null, vel = 0, rafId = 0, lastT = 0;
+    const targetP = () => clamp01(scrollY / Math.max(1, track.offsetHeight - innerHeight));
+    const stepStory = (t) => {
+      const target = targetP();
+      const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0.016;
+      lastT = t;
+      vel += (STORY_W * STORY_W * (target - shownP) - 2 * STORY_W * vel) * dt;
+      shownP = clamp01(shownP + vel * dt);
+      if (Math.abs(target - shownP) < 0.001 && Math.abs(vel) < 0.01) { shownP = target; vel = 0; }
+      renderStory(shownP);
+      rafId = shownP === target ? 0 : requestAnimationFrame(stepStory);
+    };
     const updateStory = () => {
-      const maxScroll = Math.max(1, track.offsetHeight - innerHeight);
-      const P = clamp01(scrollY / maxScroll);
+      if (shownP === null || reduceMotion.matches) { shownP = targetP(); renderStory(shownP); return; }
+      if (!rafId) { lastT = 0; rafId = requestAnimationFrame(stepStory); }
+    };
+    const renderStory = (P) => {
       const mapReveal = smoothstep((P - 0.2) / 0.65);
       const titleOpacity = 1 - smoothstep(P / 0.4);
       const appMode = P >= 0.55;
