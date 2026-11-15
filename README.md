@@ -65,7 +65,7 @@ backend/ (FastAPI)  →  frontend/ (Tone.js plays the score in sync with the vid
 | 🍂 Autumn, bare ground (`earth_frac`) | dry wind and sparse wooden clicks; the wind gets quieter over bare land |
 | Winter ↔ summer | the harmony moves from D minor to F major |
 
-Musical frame: 72 BPM, D–F–G–A–C pentatonic, thresholds with hysteresis so sounds don't flicker. Each region is auto‑calibrated to its own range of values ([sonify/auto.py](sonify/auto.py)). Full sound design: [docs/sound-design.md](docs/sound-design.md) (in Ukrainian).
+Musical frame: 72 BPM, D–F–G–A–C pentatonic, thresholds with hysteresis so sounds don't flicker. Each region is auto‑calibrated to its own range of values ([sonify/auto.py](sonify/auto.py)). Full sound design: [docs/sound-design.md](docs/sound-design.md).
 
 > This is an artistic sonification for exploring and learning, not a scientific measurement. Values are estimated from the colours of the visualization, and near‑real‑time satellite data may contain clouds and gaps.
 
@@ -110,7 +110,7 @@ On Windows use `.venv\Scripts\python` and `.venv\Scripts\uvicorn` instead of `.v
 | `frontend/` | the game: `index.html`, `neuro/` (game logic, UI, 3D globe), `player.js` (Tone.js score player), `sounds/` |
 | `data/` | region catalog (crop and coordinates), frame dates, NDVI colour bar; video and computed features are not in git |
 | `shared/` | JSON schemas of the features and the score |
-| `docs/` | architecture, sound design, team notes (mostly in Ukrainian) |
+| `docs/` | sound design, screenshots |
 
 ## NASA data
 
