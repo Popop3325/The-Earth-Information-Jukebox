@@ -391,10 +391,10 @@ async function loadRegion(id) {
   document.title = `${NAMES[v.id] || v.title} · The Earth Information Jukebox`;
   crop = v.crop || null;
   layoutVideo();
-  const src = v.has_local_video ? `/media/${v.local_video}` : v.video_url;
+  const src = v.has_local_video ? `media/${v.local_video}` : v.video_url;
   if (src && !video.src.endsWith(src)) video.src = src;
 
-  const [s, f] = await Promise.all([getJSON(`/api/score/${v.id}`), getJSON(`/api/features/${v.id}`)]);
+  const [s, f] = await Promise.all([getJSON(`api/score/${v.id}`), getJSON(`api/features/${v.id}`)]);
   const p = new ScorePlayer(s, { getTime: () => video.currentTime, getRate: () => video.playbackRate });
   await p.load();
   if (token !== loadToken) return p.dispose();   // за цей час обрали інший регіон
@@ -454,7 +454,7 @@ $("game-shell").addEventListener("focusin", goToGame);
 $("back-to-game").onclick = (e) => { e.preventDefault(); goToGame(); };
 
 (async function init() {
-  const all = await getJSON("/api/videos");
+  const all = await getJSON("api/videos");
   videos = REGIONS.map(([id]) => all.find((v) => v.id === id)).filter(Boolean);
   const sel = $("region-select");
   sel.innerHTML = videos.map((v) => `<option value="${v.id}">${NAMES[v.id]}</option>`).join("");
@@ -463,7 +463,7 @@ $("back-to-game").onclick = (e) => { e.preventDefault(); goToGame(); };
   $("listen-all").onclick = () => listenAll();
   // 3D-глобус: окремий модуль з CDN; якщо не завантажиться — лишається 2D-текстура
   import("./globe.js")
-    .then((m) => { globe = m.createGlobe($("earth-orb"), "/static/img/earth_ndvi.jpg"); focusGlobe(videos.find((x) => x.id === current)); })
+    .then((m) => { globe = m.createGlobe($("earth-orb"), "static/img/earth_ndvi.jpg"); focusGlobe(videos.find((x) => x.id === current)); })
     .catch(() => {});
   await loadRegion(location.hash.slice(1));
 })().catch((e) => document.body.insertAdjacentHTML("afterbegin", `<p style="position:fixed;z-index:99;color:#f88;padding:16px">Error: ${e.message}</p>`));

@@ -16,7 +16,7 @@
 
 import { WIND_VARIANTS } from "./winds.js";
 
-const SOUNDS = "/static/sounds/";
+const SOUNDS = "static/sounds/"; // відносно сторінки: працює і на локальному сервері, і на GitHub Pages
 
 function curveAt(points, t) {
   if (!points || !points.length) return 0;

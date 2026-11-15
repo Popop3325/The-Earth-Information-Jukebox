@@ -11,7 +11,8 @@ Made by **Frog Coders** for the [NASA Space Apps Challenge 2026: *The Earth Info
 | ![Start screen with a 3D globe textured with the NASA NDVI frame](docs/screenshots/start.jpg) | ![Game: blurred NASA video with the question “Where is nature asleep?” and six glowing neurons below](docs/screenshots/game.jpg) | ![About screen with the project essay and credits](docs/screenshots/about.jpg) |
 
 - **Demo video:** _link will be added here_
-- **Run it:** see [Run locally](#run-locally) (no public hosting yet)
+- **Play it online:** <https://popop3325.github.io/The-Earth-Information-Jukebox/> (headphones recommended; works best in Chrome, Edge or Firefox on a computer)
+- **Run it yourself:** see [Run locally](#run-locally)
 
 ---
 
@@ -100,6 +101,16 @@ Start the server and open <http://127.0.0.1:8000>:
 
 On Windows use `.venv\Scripts\python` and `.venv\Scripts\uvicorn` instead of `.venv/bin/...`.
 
+### Publish to GitHub Pages
+
+The online version is a static copy of the game: the backend answers are saved as files, so no server is needed. After changing the game, rebuild and publish it (requires the computed features from the step above):
+
+```bash
+.venv/bin/python -m tools.build_pages --publish
+```
+
+This writes the site to `build/pages/` and force-pushes it to the `gh-pages` branch, which GitHub Pages serves.
+
 ## Project structure
 
 | Folder | What's inside |
@@ -111,6 +122,7 @@ On Windows use `.venv\Scripts\python` and `.venv\Scripts\uvicorn` instead of `.v
 | `data/` | region catalog (crop and coordinates), frame dates, NDVI colour bar; video and computed features are not in git |
 | `shared/` | JSON schemas of the features and the score |
 | `docs/` | sound design, screenshots |
+| `tools/` | `build_pages.py`: static build for GitHub Pages |
 
 ## NASA data
 

@@ -23,3 +23,6 @@ data/scores/
 .DS_Store
 .idea/
 .vscode/
+
+# Статична збірка для GitHub Pages (python -m tools.build_pages)
+build/
