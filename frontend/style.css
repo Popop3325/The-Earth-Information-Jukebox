@@ -26,20 +26,8 @@ a { color: var(--accent); }
 .controls { align-items: center; flex-wrap: wrap; }
 .controls select { font: inherit; padding: 8px; border-radius: 8px; background: var(--card); color: var(--fg); border: 1px solid var(--muted); }
 
-/* Панель «Що зараз звучить» */
-.explain { margin-top: 16px; padding: 12px 16px; background: var(--card); border-radius: 10px; }
-.explain h3 { margin: 0 0 4px; }
-.explain-date { margin: 0 0 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.explain-rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.explain-rows li { display: grid; grid-template-columns: 1.6em minmax(0, 11em) 1fr; gap: 8px; align-items: center; }
-.explain-rows .data { font-variant-numeric: tabular-nums; }
-.explain-rows .bar { height: 6px; background: #2a3354; border-radius: 3px; overflow: hidden; margin-top: 4px; }
-.explain-rows .bar > i { display: block; height: 100%; background: var(--accent); transition: width 0.2s; }
-.explain-rows .sound { color: var(--fg); }
-.explain-rows li.off { opacity: 0.45; }
 .mixer { margin: 12px 0 0; border: 1px solid #2a3354; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .mixer label { cursor: pointer; }
-@media (max-width: 560px) { .explain-rows li { grid-template-columns: 1.6em 1fr; } .explain-rows .sound { grid-column: 2; } }
 
 /* Відео на canvas (обрізка регіону в усіх браузерах) */
 .screen { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; }

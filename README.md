@@ -13,7 +13,7 @@ NDVI-відео (SVS 5544) → pipeline/ (колір → NDVI, маски, зо�
                                                                                      │
                                         backend/ (FastAPI) ──────────────────────────┘
                                                 │
-                       frontend/ (джукбокс) і frontend/game/ (гра)
+                       frontend/ (гра: index.html + neuro/)
                        └── frontend/player.js програє партитуру (Tone.js)
 ```
 
@@ -27,8 +27,7 @@ NDVI-відео (SVS 5544) → pipeline/ (колір → NDVI, маски, зо�
 | `backend/` | FastAPI | №1 |
 | `sonify/` | алгоритм сонифікації, пресет `vegetation` | №2 |
 | `data/` | каталог, дати кадрів, шкала NDVI; саме відео не в git | №3 |
-| `frontend/` | джукбокс, `player.js`, звуки | №4 |
-| `frontend/game/` | гра + оригінальний прототип | №5 |
+| `frontend/` | гра (`index.html`, `neuro/`), `player.js`, звуки | №4, №5 |
 | `shared/` | схеми даних | усі |
 | `docs/` | архітектура, план команди, задачі | усі |
 
@@ -59,8 +58,7 @@ curl -L -o data/raw/ndvi_global.mp4 https://svs.gsfc.nasa.gov/vis/a000000/a00550
 .venv/bin/uvicorn backend.main:app --reload --reload-exclude '.venv/*'
 ```
 
-- Джукбокс: http://127.0.0.1:8000
-- Гра: http://127.0.0.1:8000/game
+- Гра: http://127.0.0.1:8000
 
 ## Робота в команді
 

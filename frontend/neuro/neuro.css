@@ -9,7 +9,7 @@ html:has(.game-page), .game-page { margin:0; min-height:100%; background:#080d0e
 .story-title-mode .planet-title { opacity:1; visibility:visible; }
 .story-app-mode .planet-title { opacity:1; visibility:visible; background:none; }
 .earth-orb { position:absolute; width:min(70vw,70vh,620px); aspect-ratio:1; overflow:visible; border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%) scale(calc(.78 + var(--planet-intro,0)*.22 + var(--map-reveal)*5)); transform-origin:50% 50%; background:transparent; box-shadow:0 0 0 2px #a7e7ff75,0 0 22px 7px #76cfff60,0 0 100px 15px #387cb460; opacity:calc(var(--planet-intro,0)*(1 - var(--map-reveal))); filter:blur(calc((1 - var(--planet-intro,0))*3px + var(--map-reveal)*18px)); will-change:transform,filter,opacity; }
-.earth-texture { position:absolute; inset:0; border-radius:inherit; background-color:#16516e; background-image:url("/static/game/earth-texture.svg?v=4"); background-size:200% 100%; background-position:50% center; animation:earth-turn 90s linear infinite; filter:saturate(1.12) contrast(1.07) brightness(1.08); }
+.earth-texture { position:absolute; inset:0; border-radius:inherit; background-color:#16516e; background-size:200% 100%; background-position:50% center; animation:earth-turn 90s linear infinite; filter:saturate(1.12) contrast(1.07) brightness(1.08); }
 .earth-model { position:absolute; inset:-4%; z-index:1; width:108%; height:108%; background-color:transparent !important; --poster-color:transparent; --progress-bar-color:#b5e58e; --progress-mask:#080d0e; }
 .earth-orb.model-ready .earth-texture { opacity:0; }
 .earth-orb:has(.earth-texture) { isolation:isolate; }

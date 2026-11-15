@@ -7,8 +7,8 @@
 | 1 | **ML + Backend** (капітан) | [tasks/1-ml-backend.md](tasks/1-ml-backend.md) | `pipeline/`, `backend/` |
 | 2 | **Алгоритм сонифікації** (Python) | [tasks/2-sonification.md](tasks/2-sonification.md) | `sonify/` |
 | 3 | **Дані, рендер аудіо, деплой** (Python) | [tasks/3-data-render-deploy.md](tasks/3-data-render-deploy.md) | `data/catalog.json`, `data/descriptions.json`, `render/`, деплой |
-| 4 | **Frontend** | [tasks/4-frontend.md](tasks/4-frontend.md) | `frontend/` (крім `game/`), особливо `frontend/player.js` |
-| 5 | **Гейміфікація** | [tasks/5-gamification.md](tasks/5-gamification.md) | `frontend/game/` |
+| 4 | **Frontend** | [tasks/4-frontend.md](tasks/4-frontend.md) | `frontend/`, особливо `frontend/player.js` |
+| 5 | **Гейміфікація** | [tasks/5-gamification.md](tasks/5-gamification.md) | `frontend/neuro/main.js` (правила гри) |
 
 **Правило:** редагуєте лише свої файли. Якщо потрібно змінити чужий, напишіть власнику або зробіть PR і позначте його.
 
@@ -30,7 +30,7 @@
 | `shared/schema/score.schema.json` | формат партитури | 2 | 4, 5, 3 (рендер) |
 | `data/catalog.json` | регіон (crop/geo/exclude), дати, пресет, квіз | 3 | 1, 2 |
 | `sonify/presets.json` | правила «фіча → звук» | 2 | 2 |
-| API (`backend/main.py`) | `/api/videos`, `/api/score/<id>`, `/api/quiz/<id>` | 1 | 4, 5 |
+| API (`backend/main.py`) | `/api/videos`, `/api/score/<id>` | 1 | 4, 5 |
 | `frontend/player.js` (`ScorePlayer`) | програвання партитури | 4 | 5 |
 
 ## Як працювати зі ШІ
@@ -43,7 +43,7 @@
 
 | Час | Мета | Хто |
 |---|---|---|
-| **0–2 год** | Усі склонували й запустили проєкт (README). Відкрили `/` і `/game` | усі |
+| **0–2 год** | Усі склонували й запустили проєкт (README). Відкрили `/` | усі |
 | **2–12 год** | **MVP:** NDVI Північної Америки звучить красиво й зрозуміло, гра проходиться від початку до кінця | усі |
 | **12 год** | 🔄 **Синк №1:** разом слухаємо й граємо, вирішуємо, що звучить погано | усі |
 | **12–30 год** | ML-класифікатор, кращі пресети, візуал гри, описи, доступність | усі |

@@ -1,5 +1,5 @@
 // ScorePlayer: програє партитуру (score.json з /api/score/<id>) синхронно з часом відео.
-// Спільний для джукбокса (app.js) і гри (game/). Власник: №4 (frontend).
+// Програвач партитури для гри (neuro/main.js). Власник: №4 (frontend).
 //
 // Використання:
 //   const score = await (await fetch(`/api/score/${id}`)).json();
@@ -50,7 +50,7 @@ function makeInstruments(out, track) {
   const drum = keep(new Tone.MembraneSynth().connect(out));
   drum.volume.value = -6;
 
-  // Духовий голос = «тепла флейта» (обрано в frontend/lab/voice.html): майже чистий тон октавою нижче
+  // Духовий голос = «тепла флейта» (обрано в тимчасовій лабораторії): майже чистий тон октавою нижче
   // за ноти партитури, м'яка атака, плавне легато між нотами (portamento) і фільтр, що зрізає писк.
   const windFilter = keep(new Tone.Filter(1100, "lowpass").connect(out));
   const wind_voice = keep(new Tone.MonoSynth({
@@ -78,7 +78,7 @@ function makeInstruments(out, track) {
 function makeSynthLayer(spec, node, master, track, beatSec) {
   const keep = (n) => (track.push(n), n);
   if (spec.type === "air") {
-    // Повітря = один із варіантів з frontend/winds.js (обирали в лабораторії /static/lab/wind.html).
+    // Повітря = один із варіантів з frontend/winds.js (обирали в тимчасовій лабораторії).
     // Ручка intensity (0..1) — «сила» вітру з даних. Пориви й «дихання» всередині варіанту — повільні.
     const variant = WIND_VARIANTS[spec.variant || "current"] || WIND_VARIANTS.current;
     const inst = variant.build(node);

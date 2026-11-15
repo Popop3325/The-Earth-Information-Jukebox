@@ -19,10 +19,10 @@ sonify/  (Python) + sonify/presets.json ("vegetation")
         ▼
 score (JSON)  ── shared/schema/score.schema.json
         │
-backend/ (FastAPI): /api/videos  /api/score/<id>  /api/quiz/<id>  /media  /static
+backend/ (FastAPI): /api/videos  /api/score/<id>  /media  /static
         │
-   ┌────┴─────────────────────────┐
-frontend/ (джукбокс)        frontend/game/ (гра)
+        │
+frontend/ (гра: index.html + neuro/)
    └── frontend/player.js (ScorePlayer, Tone.js): програє score синхронно з video.currentTime
 ```
 
@@ -60,6 +60,6 @@ frontend/ (джукбокс)        frontend/game/ (гра)
 
 Генератор детермінований (фіксований `seed`).
 
-## Гра (`frontend/game/`)
+## Гра (`frontend/index.html` + `frontend/neuro/`)
 
-`GET /api/quiz/<id>`: ключові кадри (квартали) і пари «де більше/менше зелені». Пари з різницею менше `min_diff` пропускаються, бо на слух їх не розрізнити.
+Шість «нейронів» (місяці через 180 днів), п'ять пар із питаннями. Відповіді рахуються у браузері (`neuro/main.js`) з `/api/features/<id>`; окремого API для гри немає.
