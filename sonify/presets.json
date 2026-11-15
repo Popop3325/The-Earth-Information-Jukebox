@@ -183,7 +183,7 @@
     "layers": [
       {
         "id": "wind",
-        "sample": "wind.m4a",
+        "sample": "wind_warm.m4a",
         "feature": "motion",
         "range": [
           0,
