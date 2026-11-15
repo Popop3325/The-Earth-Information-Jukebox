@@ -339,7 +339,7 @@ const handlers = {
     const g = game;
     if (!g || g.busy || g.finished) return;
     const p = g.pairs[g.i];
-    if (i !== p.a && i !== p.b) return handlers.onListen(i);
+    if (i !== p.a && i !== p.b) return;          // лише нейрони активної пари
     stopListeningAll();
     if (i === p.correct) {
       if (g.errors === 0) g.firstTry += 1;
@@ -356,7 +356,8 @@ const handlers = {
     }
   },
   onListen(i) {
-    if (game?.busy) return;
+    const p = game?.pairs[game.i];
+    if (!game || game.busy || game.finished || (i !== p.a && i !== p.b)) return;   // слухати можна лише активну пару
     stopListeningAll();
     UI.stopSpeak();
     playMonth(i);

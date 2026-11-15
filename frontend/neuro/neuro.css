@@ -224,3 +224,4 @@ html:has(.game-page) { scroll-snap-type: y mandatory; }
 .starfield-b { animation-duration: 13s; animation-delay: -6s; }
 @keyframes star-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(.45); } }
 .planet-title .earth-orb { z-index: 1; }
+.node-hitbox:disabled { cursor: default; }

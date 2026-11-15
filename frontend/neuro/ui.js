@@ -89,7 +89,7 @@ function frame(time) {
   nodes.forEach((n, i) => {
     let tx = n.bx * W + Math.sin(t * 0.5 + i) * 4, ty = n.by * H + Math.cos(t * 0.4 + i * 1.5) * 4;
     const dx = mouse.x - tx, dy = mouse.y - ty, d = Math.hypot(dx, dy);
-    if (d < PULL_R) { const k = (1 - d / PULL_R) * 0.45; tx += dx * k; ty += dy * k; }
+    if (n.active && d < PULL_R) { const k = (1 - d / PULL_R) * 0.45; tx += dx * k; ty += dy * k; }
     n.x += (tx - n.x) * 0.14; n.y += (ty - n.y) * 0.14;
     if (n.active) n.glow = Math.max(n.glow, 0.48);
     if (playingNode === n.i) n.glow = Math.max(n.glow, 0.92);
@@ -176,8 +176,8 @@ export const UI = {
       play.onclick = (e) => { if (e.detail) play.blur(); handlers.onListen(i); };
       hit.onclick = (e) => {
         if (e.detail) hit.blur();            // клік мишею: фокус не лишається на нейроні
-        if (qOn && pair && (i === pair[0] || i === pair[1])) handlers.onPick(i);
-        else handlers.onListen(i);
+        if (!nodes[i].active) return;        // сірі (неактивні) нейрони не реагують
+        if (qOn) handlers.onPick(i); else handlers.onListen(i);
       };
       ui.append(lbl); wrap.append(hit, ui, play); el.box.appendChild(wrap); node.el = wrap; node.hit = hit; return node;
     });
@@ -194,7 +194,10 @@ export const UI = {
     UI.refreshLabels();
   },
   refreshLabels() {
-    nodes.forEach((n) => n.hit.setAttribute("aria-label", `${qOn && n.active ? "Choose" : "Listen to"} ${n.label}`));
+    nodes.forEach((n) => {
+      n.hit.disabled = !n.active;          // неактивні: не клікаються й не отримують фокус
+      n.hit.setAttribute("aria-label", `${qOn && n.active ? "Choose" : "Listen to"} ${n.label}`);
+    });
   },
   showQuestion(text) { el.q.textContent = text; el.q.classList.remove("hidden"); qOn = true; UI.refreshLabels(); },
   hideQuestion() { el.q.classList.add("hidden"); qOn = false; UI.refreshLabels(); },
