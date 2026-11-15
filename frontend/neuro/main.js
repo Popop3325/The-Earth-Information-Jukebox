@@ -37,6 +37,7 @@ const YEAR_SECONDS = 3;      // скільки звучить один пері�
 const MIN_CHANGE = 0.15;     // зміна < 15% діапазону регіону → «тиха ділянка» без питання (на слух не розрізнити)
 
 let videos = [];
+let current = null;          // id регіону
 let player = null, score = null, features = null, crop = null;
 let loadToken = 0;
 let uiReady = false;
@@ -44,6 +45,9 @@ let fixedT = null;           // коли не null, звук «замороже�
 let run = 0;                 // id поточного відтворення (новий скасовує попередній)
 const mix = {};              // track → гучність 0..1 з мікшера
 let game = null;
+let globe = null;            // 3D-глобус (globe.js), якщо WebGL доступний
+let guideRun = 0;            // id автосупроводу (новий скасовує попередній)
+let earSynth = null;
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -74,8 +78,12 @@ function dateAt(t) {
   return `${d.getDate()} ${SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+let needDraw = true;
+["seeked", "loadeddata", "play"].forEach((ev) => video.addEventListener(ev, () => (needDraw = true)));
+addEventListener("resize", () => (needDraw = true));
 (function loop() {
-  drawFrame();
+  // перемальовуємо відео лише коли воно грає або змінився кадр (на паузі — нічого не робимо)
+  if (needDraw || !video.paused) { drawFrame(); needDraw = video.readyState < 2; }
   if (features) $("map-tag").textContent = `NASA · NDVI · ${dateAt(fixedT ?? video.currentTime)}`;
   requestAnimationFrame(loop);
 })();
@@ -159,7 +167,79 @@ function buildGame() {
     seg.correct = more ? (va >= vb ? a : b) : (va <= vb ? a : b);
     segs.push(seg);
   }
-  return { segs, i: 0, errors: 0, firstTry: 0, asked: 0, busy: false, finished: false };
+  return { segs, i: 0, errors: 0, firstTry: 0, asked: 0, busy: false, finished: false, started: false, keysTold: false };
+}
+
+/** Скасувати автосупровід (голос + відтворення), напр. коли людина відповіла раніше */
+function cancelGuide() {
+  guideRun++;
+  UI.stopSpeak();
+  stopPlayback();
+}
+
+/** Автопрослуховування для незрячих: гра сама озвучує питання, грає обидва періоди й чекає «1» або «2».
+ *  Руками потрібна лише одна клавіша на відповідь. */
+async function guide(seg) {
+  const my = ++guideRun;
+  const kf = score.keyframes, A = uk(kf[seg.a].label), B = uk(kf[seg.b].label);
+  const alive = () => my === guideRun && game && !game.busy;
+  await UI.speak(`Ділянка з ${A.gen} по ${B.nom}. ${seg.calm ? "Тиха ділянка, майже без змін." : seg.text}`);
+  if (!alive()) return;
+  if (seg.calm) { await UI.speak("Натисніть пробіл, щоб послухати."); return; }
+  await UI.speak(`Перший: ${A.nom}.`); if (!alive()) return;
+  await playPeriod(seg.a); if (!alive()) return;
+  await UI.speak(`Другий: ${B.nom}.`); if (!alive()) return;
+  await playPeriod(seg.b); if (!alive()) return;
+  await UI.speak(game.keysTold ? "Один чи два?" : "Натисніть 1, якщо перший, або 2, якщо другий. R — послухати ще раз, пробіл — ехо.");
+  game.keysTold = true;
+}
+
+/** Короткі звукові сигнали (earcons) + вібрація на телефоні: результат чути й відчути без екрана */
+function earcon(kind) {
+  try {
+    if (!earSynth) {
+      earSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.005, decay: 0.25, sustain: 0, release: 0.2 } }).toDestination();
+      earSynth.volume.value = -8;
+    }
+    const now = Tone.now();
+    if (kind === "ok") { earSynth.triggerAttackRelease("A5", 0.12, now); earSynth.triggerAttackRelease("E6", 0.2, now + 0.13); }
+    else earSynth.triggerAttackRelease("D3", 0.35, now);
+    navigator.vibrate?.(kind === "ok" ? [40, 60, 40] : [180]);
+  } catch { /* звук необов'язковий */ }
+}
+
+/** Опис періоду для «Екскурсії без рук»: що видно й що чути */
+function describe(k) {
+  const m = k.metrics, L = score.legend || {};
+  const nm = (v, r) => (r ? Math.min(1, Math.max(0, (v - r[0]) / (r[1] - r[0]))) : 0);
+  const date = uk(k.label).nom, green = Math.round(m.green_frac * 100), snow = m.white_frac > 0.05;
+  if (nm(m.white_frac, L.winter_range) > 0.5) return `${date}. Зима: сніг укриває ${Math.round(m.white_frac * 100)} відсотків суші, чути хуртовину.`;
+  if (nm(m.green_up_rate, L.spring_range) > 0.3) return `${date}. Зелень росте${snow ? ", сніг тане: чути капель" : ""}. Дзвіночків більшає, мелодія йде вгору. Зелені ${green} відсотків.`;
+  if (nm(m.green_up_rate, L.autumn_range) > 0.3) return `${date}. Зелень спадає: сухий вітер, дерев'яні клацання, мелодія йде вниз. Зелені ${green} відсотків.`;
+  return `${date}. Пора буйної зелені: птахи й багато дзвіночків. Зелені ${green} відсотків.`;
+}
+
+/** «Екскурсія без рук»: усі періоди по черзі з описом голосом, без питань */
+async function tour() {
+  cancelGuide();
+  const my = guideRun;
+  const kf = score.keyframes;
+  UI.hideMessage(); UI.hideQuestion(); UI.showBell(false); UI.showHint("");
+  await UI.speak(`Екскурсія без рук: ${NAMES[current] || ""}. Просто слухайте. Escape — зупинити.`);
+  for (let i = 0; i + 1 < kf.length && my === guideRun; i++) {
+    UI.showPair(i, i + 1);
+    UI.unlockScreen(describe(kf[i]));
+    UI.announce(describe(kf[i]));
+    await UI.speak(describe(kf[i]));
+    if (my !== guideRun) break;
+    await playSegment(kf[i], kf[i + 1], SEGMENT_SECONDS);
+  }
+  UI.lockScreen();
+  if (my !== guideRun) return;
+  await UI.speak("Екскурсію завершено.");
+  if (!game.started) showStart();
+  else if (game.finished) finish();
+  else askPair();
 }
 
 function askPair() {
@@ -171,9 +251,8 @@ function askPair() {
   UI.setScore(`Відрізок ${g.i + 1} з ${g.segs.length}`);
   if (seg.calm) UI.showQuestion(`${A.nom} → ${B.nom}: тиха ділянка, майже без змін. Натисніть 🔔 Ехо, щоб послухати.`);
   else UI.showQuestion(`${seg.text} (${A.nom} чи ${B.nom})`);
-  const say = `Ділянка з ${A.gen} по ${B.nom}.`;
-  UI.announce(`${say} ${seg.calm ? "Тиха ділянка." : seg.text}`);
-  UI.speak(say);
+  UI.announce(`Ділянка з ${A.gen} по ${B.nom}. ${seg.calm ? "Тиха ділянка." : seg.text}`);
+  guide(seg);
 }
 
 async function unlock(withBell) {
@@ -214,25 +293,33 @@ const handlers = {
     if (!g || g.busy || g.finished) return;
     const seg = g.segs[g.i];
     if (seg.calm) return handlers.onBell();
+    cancelGuide();
     if (g.errors === 0) g.asked += 1;
     if (i === seg.correct) {
       if (g.errors === 0) g.firstTry += 1;
+      earcon("ok");
       UI.announce("Так! Відрізок відкрито.");
+      UI.speak("Так!");
       unlock(false);
     } else {
       UI.wrong(i);
+      earcon("no");
       g.errors += 1;
-      UI.announce("Ні. Послухайте обидва періоди ще раз.");
-      UI.showHint(g.errors >= 2 ? `${seg.hint} Або натисніть 🔔 Ехо, щоб відкрити відрізок без відповіді.` : seg.hint);
+      const extra = g.errors >= 2 ? " Або натисніть пробіл, щоб відкрити відрізок без відповіді." : "";
+      UI.showHint(`${seg.hint}${extra}`);
+      UI.announce(`Ні. ${seg.hint}${extra}`);
+      UI.speak(`Ні. ${seg.hint} R — послухати ще раз.${extra}`);
     }
   },
   onListen(i) {
     if (game?.busy) return;
+    cancelGuide();
     playPeriod(i);
   },
   onBell() {
     const g = game;
     if (!g || g.busy) return;
+    cancelGuide();
     if (g.finished) return playAll();
     unlock(true);
   },
@@ -264,21 +351,54 @@ async function loadRegion(id) {
   const labels = s.keyframes.map((k) => uk(k.label).nom);
   if (!uiReady) { UI.init(labels, handlers); uiReady = true; } else UI.setNodes(labels);
   game = buildGame();
+  current = v.id;
   UI.lockScreen();
   UI.setCaption("");
-  UI.showMessage(`${NAMES[v.id] || v.title}: зміни Землі — у звуці`, "Почати", async () => {
-    await ensureAudio();
-    UI.hideMessage();
-    askPair();
-  });
+  focusGlobe(v);
+  showStart();
 }
 
-// Клавіатура: пробіл = Ехо, але лише коли вступ пройдено (інакше пробіл прокручує сторінку)
+const KEYS_HELP = "Enter — почати. 1 і 2 — відповідь, R — послухати ще раз, пробіл — ехо, T — екскурсія без рук, Escape — тиша.";
+
+function showStart() {
+  UI.showMessage(`${NAMES[current] || ""}: зміни Землі — у звуці`, "Почати", async () => {
+    await ensureAudio();
+    UI.hideMessage();
+    game.started = true;
+    askPair();
+  });
+  UI.announce(`${NAMES[current] || ""}. ${KEYS_HELP}`);
+}
+
+/** Повернути 3D-глобус до центру регіону (центр crop у рівнопроміжній проекції 4096×2048) */
+function focusGlobe(v) {
+  if (!globe || !v?.crop) return;
+  const [x, y, w, h] = v.crop;
+  globe.setFocus(((x + w / 2) / 4096) * 360 - 180, 90 - ((y + h / 2) / 2048) * 180);
+}
+
+// Клавіатура — гра повністю без миші. Літери за фізичними клавішами (e.code), тож працює й в українській розкладці.
 window.addEventListener("keydown", (e) => {
   const inApp = !$("game-shell").classList.contains("intro-mode");
-  if (!inApp || e.code !== "Space" || e.target.closest("input, select, textarea, button, summary")) return;
-  e.preventDefault();
-  if (game && !game.finished && $("screen-overlay").classList.contains("hidden")) handlers.onBell();
+  if (!inApp || !game || e.target.closest("input, select, textarea")) return;
+  const overlay = !$("screen-overlay").classList.contains("hidden");
+  const seg = game.segs[game.i];
+  if (e.code === "Escape") { cancelGuide(); return; }
+  if (e.code === "KeyT") { e.preventDefault(); tour(); return; }
+  if (overlay) {
+    if (e.code === "Enter" && !e.target.closest("button")) { e.preventDefault(); $("overlay-btn").click(); }
+    return;
+  }
+  if (e.code === "Space") {
+    if (e.target.closest("button, summary")) return;
+    e.preventDefault();
+    if (!game.finished) handlers.onBell();
+    return;
+  }
+  if (game.finished || game.busy || !seg) return;
+  if (["Digit1", "Numpad1", "ArrowLeft"].includes(e.code)) { e.preventDefault(); handlers.onPick(seg.a); }
+  if (["Digit2", "Numpad2", "ArrowRight"].includes(e.code)) { e.preventDefault(); handlers.onPick(seg.b); }
+  if (e.code === "KeyR") { e.preventDefault(); cancelGuide(); guide(seg); }
 });
 
 // «Пропустити вступ»: одразу до гри; кнопка ховається, коли вступ пройдено
@@ -294,5 +414,10 @@ addEventListener("scroll", () => {
   sel.innerHTML = videos.map((v) => `<option value="${v.id}">${NAMES[v.id] || v.title}</option>`).join("");
   sel.onchange = () => (location.hash = sel.value);
   addEventListener("hashchange", () => loadRegion(location.hash.slice(1)));
+  $("tour-btn").onclick = () => tour();
+  // 3D-глобус: окремий модуль з CDN; якщо не завантажиться — лишається 2D-текстура
+  import("./globe.js")
+    .then((m) => { globe = m.createGlobe($("earth-orb"), "/static/img/earth_ndvi.jpg"); focusGlobe(videos.find((x) => x.id === current)); })
+    .catch(() => {});
   await loadRegion(location.hash.slice(1));
 })().catch((e) => document.body.insertAdjacentHTML("afterbegin", `<p style="position:fixed;z-index:99;color:#f88;padding:16px">Помилка: ${e.message}</p>`));

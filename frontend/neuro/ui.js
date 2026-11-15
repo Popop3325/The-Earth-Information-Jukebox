@@ -35,24 +35,45 @@ function sparkAt(n, count) {
 }
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const smoothstep = (value) => { const x = clamp01(value); return x * x * (3 - 2 * x); };
+const bez = (p0, p1, p2, p3, u) => { const v = 1 - u; return v*v*v*p0 + 3*v*v*u*p1 + 3*v*u*u*p2 + u*u*u*p3; };
+/** Дуга між нейронами: м'яка S-подібна крива (кубічна Безьє), що ледь «дихає»,
+ *  зі світінням і світлим імпульсом, який біжить уздовж відкритого зв'язку. */
 function drawLink(l, t) {
   const A = nodes[l.a], B = nodes[l.b];
-  const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy) || 1;
-  const cx = (A.x + B.x) / 2 - dy / len * 30, cy = (A.y + B.y) / 2 + dx / len * 30;
-  const u = clamp01(l.p), v = 1 - u;
+  if (!A || !B) return;
+  const u = clamp01(l.p);
   if (!u) return;
-  // De Casteljau gives the exact control point and endpoint for the visible
-  // fraction of the curve, so progressive links stay smooth with one stroke.
-  const px = v*v*A.x + 2*v*u*cx + u*u*B.x;
-  const py = v*v*A.y + 2*v*u*cy + u*u*B.y;
-  const qx = A.x + (cx - A.x) * u, qy = A.y + (cy - A.y) * u;
-  const hue = (l.a * 50 + t * 40) % 360;
-  const gradient = g.createLinearGradient(A.x, A.y, B.x, B.y);
-  gradient.addColorStop(0, `hsla(${hue},90%,75%,0.9)`);
-  gradient.addColorStop(1, `hsla(${(hue + 90) % 360},90%,75%,0.9)`);
-  g.lineWidth = 2.5; g.shadowBlur = 10; g.shadowColor = `hsla(${hue},90%,75%,0.8)`;
-  g.strokeStyle = gradient; g.beginPath(); g.moveTo(A.x, A.y); g.quadraticCurveTo(qx, qy, px, py); g.stroke();
+  const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;                       // нормаль до відрізка
+  const side = l.a % 2 ? -1 : 1;
+  const lift = Math.min(64, len * 0.42) * side;              // висота дуги росте з відстанню
+  const breathe = Math.sin(t * 1.1 + l.a * 1.7) * Math.min(10, len * 0.06);
+  const c1x = A.x + dx * 0.28 + nx * (lift + breathe), c1y = A.y + dy * 0.28 + ny * (lift + breathe);
+  const c2x = A.x + dx * 0.72 + nx * (lift * 0.55 - breathe), c2y = A.y + dy * 0.72 + ny * (lift * 0.55 - breathe);
+  const steps = Math.max(10, Math.ceil(36 * u));
+  g.beginPath();
+  for (let k = 0; k <= steps; k++) {
+    const s2 = (u * k) / steps;
+    const x = bez(A.x, c1x, c2x, B.x, s2), y = bez(A.y, c1y, c2y, B.y, s2);
+    k ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  const hue = (l.a * 47 + t * 25) % 360;
+  const grad = g.createLinearGradient(A.x, A.y, B.x, B.y);
+  grad.addColorStop(0, `hsla(${hue},85%,72%,1)`);
+  grad.addColorStop(1, `hsla(${(hue + 70) % 360},85%,72%,1)`);
+  const base = g.globalAlpha;
+  g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = grad;
+  g.globalAlpha = base * 0.16; g.lineWidth = 9; g.stroke();          // м'яке світіння
+  g.globalAlpha = base * 0.9; g.lineWidth = 2; g.shadowBlur = 8; g.shadowColor = `hsla(${hue},90%,75%,0.9)`; g.stroke();
   g.shadowBlur = 0;
+  if (u >= 1) {                                                       // імпульс біжить по зв'язку
+    const s3 = (t * 0.32 + l.a * 0.19) % 1;
+    const px = bez(A.x, c1x, c2x, B.x, s3), py = bez(A.y, c1y, c2y, B.y, s3);
+    const pg = g.createRadialGradient(px, py, 0, px, py, 7);
+    pg.addColorStop(0, "rgba(255,255,255,0.95)"); pg.addColorStop(1, "rgba(255,255,255,0)");
+    g.globalAlpha = base; g.fillStyle = pg; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill();
+  }
+  g.globalAlpha = base;
 }
 function drawNode(n, t) {
   const x0 = n.x + Math.sin(t * 45) * 6 * n.bad;
@@ -72,70 +93,52 @@ function frame(time) {
   g.clearRect(0, 0, W, H); g.fillStyle = "#fff";
   stars.forEach((s) => { g.globalAlpha = 0.2 + 0.4 * Math.sin(t * s.s + s.x * 10) ** 2; g.beginPath(); g.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); g.fill(); });
   g.globalAlpha = 1;
-  const landingProgress = landingAt ? Math.min(1, (performance.now() - landingAt) / 3500) : 0;
-  const exitProgress = smoothstep((storyProgress - 0.63) / 0.28);
-  const introLinkFade = 1 - smoothstep((storyProgress - 0.04) / 0.11);
-  const orbitRingFade = smoothstep((storyProgress - 0.31) / 0.11)
-    * (1 - smoothstep((storyProgress - 0.63) / 0.14));
-  if (introMode || storyProgress < 0.99 || landingProgress < 1) {
-    g.save(); g.globalAlpha = 0.48 * introLinkFade * (introMode ? 1 : 1 - landingProgress);
+  // Історія (прокрутка): 0–4% — хмарка нейронів; 4–34% — плавно стягуються в центр планети
+  // (лише чверть оберту); 34–72% — одне світне ядро, поки видно назву; 72–96% — розлітаються на стрічку.
+  const P = storyProgress;
+  const gather = smoothstep((P - 0.04) / 0.30);
+  const burst = smoothstep((P - 0.72) / 0.24);
+  const merged = gather * (1 - burst);
+  const CX = 0.5, CY = 0.49;
+  const introLinkFade = 1 - smoothstep((P - 0.02) / 0.12);
+  if (introLinkFade > 0.001 && introMode) {
+    g.save(); g.globalAlpha = 0.5 * introLinkFade;
     introLinks.forEach((l) => drawLink(l, t));
     g.restore();
   }
   nodes.forEach((n, i) => {
-    let x = introMode ? n.ix : n.bx, y = introMode ? n.iy : n.by;
-    const count = Math.max(1, nodes.length), orbitRadius = Math.min(W, H) * 0.45;
-    const orbitAngle = -Math.PI / 2 + Math.PI * 2 * i / count;
-    const spinOffset = t * 0.12;
-    if (storyProgress >= 0.04 && storyProgress < 0.38) {
-      const capture = smoothstep((storyProgress - 0.04) / 0.34);
-      const startDx = (n.ix - 0.5) * W, startDy = (n.iy - 0.49) * H;
-      const startAngle = Math.atan2(startDy, startDx);
-      const startRadius = Math.hypot(startDx, startDy);
-      const captureAngle = startAngle + (orbitAngle - Math.PI * 2 - startAngle) * capture - spinOffset * capture;
-      const captureRadius = startRadius + (orbitRadius - startRadius) * capture;
-      x = 0.5 + Math.cos(captureAngle) * captureRadius / W;
-      y = 0.49 + Math.sin(captureAngle) * captureRadius / H;
-    } else if (storyProgress >= 0.38 && storyProgress < 0.63) {
-      const orbitTurn = smoothstep((storyProgress - 0.38) / 0.25) * Math.PI * 0.7;
-      const angle = orbitAngle - Math.PI * 2 - orbitTurn - spinOffset;
-      x = 0.5 + Math.cos(angle) * orbitRadius / W;
-      y = 0.49 + Math.sin(angle) * orbitRadius / H;
-    } else if (storyProgress >= 0.63 && storyProgress < 0.91) {
-      const angle = orbitAngle - Math.PI * 2 - Math.PI * 0.7 - exitProgress * Math.PI * 2 - spinOffset;
-      // Keep the neurons spread while they spiral down; collapsing to radius 0
-      // made them bunch into one bright knot just before the timeline appeared.
-      const radius = orbitRadius * (1 - exitProgress * 0.78);
-      const centerY = 0.49 + 0.28 * exitProgress;
-      x = 0.5 + Math.cos(angle) * radius / W;
-      y = centerY + Math.sin(angle) * radius / H;
-    } else if (storyProgress >= 0.91) {
-      const fan = smoothstep((storyProgress - 0.91) / 0.09);
-      // Carry the counter-clockwise motion into the landing arc, then let each
-      // neuron settle onto its own point along the timeline.
-      const angle = orbitAngle - Math.PI * 2 - Math.PI * 0.7 - Math.PI * 2 - spinOffset - fan * Math.PI * 0.65;
-      const radius = orbitRadius * (0.22 - 0.12 * fan);
-      const spiralX = 0.5 + Math.cos(angle) * radius / W;
-      const spiralY = 0.77 + Math.sin(angle) * radius / H;
-      x = spiralX + (n.bx - spiralX) * fan;
-      y = spiralY + (n.by - spiralY) * fan;
+    let x, y;
+    if (burst > 0) {
+      const arc = Math.sin(burst * Math.PI) * 0.05 * (i % 2 ? 1 : -1);   // легка дуга дорогою
+      x = CX + (n.bx - CX) * burst + arc;
+      y = CY + (n.by - CY) * burst;
+    } else {
+      const sx = (n.ix - CX) * W, sy = (n.iy - CY) * H;
+      const ang = Math.atan2(sy, sx) + gather * Math.PI * 0.35;
+      const rad = Math.hypot(sx, sy) * (1 - gather);
+      x = CX + (Math.cos(ang) * rad) / W;
+      y = CY + (Math.sin(ang) * rad) / H;
     }
-    let tx = x * W + Math.sin(t * 0.5 + i) * 7, ty = y * H + Math.cos(t * 0.4 + i * 1.5) * 7;
-    const dx = tx - mouse.x, dy = ty - mouse.y, d = Math.hypot(dx, dy);
-    if (d < 130 && d > 0) { const f = (130 - d) / 130 * 30; tx += dx / d * f; ty += dy / d * f; }
-    const follow = introMode ? 0.07 : 0.022;
+    const wobble = 7 * (1 - merged);
+    let tx = x * W + Math.sin(t * 0.5 + i) * wobble, ty = y * H + Math.cos(t * 0.4 + i * 1.5) * wobble;
+    if (merged < 0.5) {
+      const dx = tx - mouse.x, dy = ty - mouse.y, d = Math.hypot(dx, dy);
+      if (d < 130 && d > 0) { const f = (130 - d) / 130 * 30; tx += dx / d * f; ty += dy / d * f; }
+    }
+    const follow = burst > 0 && burst < 1 ? 0.2 : 0.12;
     n.x += (tx - n.x) * follow; n.y += (ty - n.y) * follow;
     if (n.active) n.glow = Math.max(n.glow, 0.48);
     if (playingNode === n.i) n.glow = Math.max(n.glow, 0.92);
     n.glow = Math.max(0, n.glow - 0.02); n.bad = Math.max(0, n.bad - 0.02);
     n.el.style.transform = `translate(${n.x}px, ${n.y}px)`;
   });
-  links.forEach((l) => { l.p = Math.min(1, l.p + 0.03); drawLink(l, t); });
-  if (orbitRingFade > 0.001) {
-    g.save(); g.globalAlpha = 0.62 * orbitRingFade;
-    orbitLinks.forEach((l) => drawLink(l, t));
-    g.restore();
+  if (merged > 0.02) {                                                   // ядро: усі нейрони в одній точці
+    const R = Math.min(W, H) * 0.07 * (1 + 0.12 * Math.sin(t * 2.2));
+    const cg = g.createRadialGradient(CX * W, CY * H, 0, CX * W, CY * H, R);
+    cg.addColorStop(0, "rgba(255,255,255,0.95)"); cg.addColorStop(0.35, "rgba(255,226,140,0.55)"); cg.addColorStop(1, "rgba(255,213,79,0)");
+    g.save(); g.globalAlpha = merged; g.fillStyle = cg; g.beginPath(); g.arc(CX * W, CY * H, R, 0, Math.PI * 2); g.fill(); g.restore();
   }
+  links.forEach((l) => { l.p = Math.min(1, l.p + 0.03); drawLink(l, t); });
   nodes.forEach((n) => drawNode(n, t));
   sparks = sparks.filter((p) => p.life > 0);
   sparks.forEach((p) => { p.x += p.vx; p.y += p.vy; p.life -= 0.03; g.fillStyle = `hsla(${p.h},90%,80%,${p.life})`; g.beginPath(); g.arc(p.x, p.y, 2, 0, Math.PI * 2); g.fill(); });
@@ -290,11 +293,21 @@ export const UI = {
   hideMessage() { el.overlay.classList.add("hidden"); },
 
   announce(text) { el.live.textContent = ""; setTimeout(() => (el.live.textContent = text), 30); },
+  /** Озвучити текст. Promise завершується, коли фразу договорено (або одразу, якщо озвучення вимкнене).
+   *  Так гра може вести незрячу людину крок за кроком: сказала → зіграла → чекає відповідь. */
   speak(text) {
-    if (!voiceOn || !("speechSynthesis" in window)) return;
+    if (!voiceOn || !("speechSynthesis" in window)) return Promise.resolve();
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = "uk-UA"; u.rate = 1.0; speechSynthesis.speak(u);
+    return new Promise((resolve) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "uk-UA"; u.rate = 1.0;
+      const done = () => { clearTimeout(guard); resolve(); };
+      const guard = setTimeout(done, 1500 + text.length * 90);   // на випадок, якщо onend не прийде
+      u.onend = done; u.onerror = done;
+      speechSynthesis.speak(u);
+    });
   },
+  voiceOn: () => voiceOn,
   stopSpeak() { if ("speechSynthesis" in window) speechSynthesis.cancel(); },
   toggleVoice() {
     voiceOn = !voiceOn; el.voice.textContent = voiceOn ? "🔊" : "🔇";
