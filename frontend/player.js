@@ -31,9 +31,6 @@ function curveAt(points, t) {
   return points[points.length - 1][1];
 }
 
-const lerp = (a, b, x) => a + (b - a) * x;
-const FLUTE = [1, 0.25, 0.08, 0.03, 0, 0, 0];          // бас-флейта: майже чистий тон
-const CLARINET = [1, 0.04, 0.5, 0.03, 0.28, 0.02, 0.14]; // кларнет: непарні гармоніки
 
 function makeInstruments(out, track) {
   const keep = (n) => (track.push(n), n);
@@ -53,13 +50,16 @@ function makeInstruments(out, track) {
   const drum = keep(new Tone.MembraneSynth().connect(out));
   drum.volume.value = -6;
 
-  // Духовий голос: один, монофонічний; тембр флейта ↔ кларнет, ковзання висоти
-  const windFilter = keep(new Tone.Filter(2600, "lowpass").connect(out));
-  const wind_voice = keep(new Tone.Synth({
-    oscillator: { type: "custom", partials: FLUTE },
-    envelope: { attack: 0.18, decay: 0.2, sustain: 0.75, release: 0.6 },
+  // Духовий голос = «тепла флейта» (обрано в frontend/lab/voice.html): майже чистий тон октавою нижче
+  // за ноти партитури, м'яка атака, плавне легато між нотами (portamento) і фільтр, що зрізає писк.
+  const windFilter = keep(new Tone.Filter(1100, "lowpass").connect(out));
+  const wind_voice = keep(new Tone.MonoSynth({
+    portamento: 0.12,
+    oscillator: { type: "custom", partials: [1, 0.18, 0.04] },
+    envelope: { attack: 0.35, decay: 0.3, sustain: 0.85, release: 1.4 },
+    filterEnvelope: { attack: 0.4, baseFrequency: 900, octaves: 0.6, sustain: 1 },
   }).connect(windFilter));
-  wind_voice.volume.value = -9;
+  wind_voice.volume.value = -14;
 
   // Лід: короткий імпульс білого шуму на високих частотах (хрускіт насту)
   const iceFilter = keep(new Tone.Filter(6500, "highpass").connect(out));
@@ -303,19 +303,11 @@ export class ScorePlayer {
     osc.stop(t0 + 0.15);
   }
 
+  /** Тепла флейта: нота октавою нижче, без «під'їзду» знизу/зверху (glide_from і timbre з партитури не використовуються —
+   *  напрям фрази й так чути з послідовності нот; м'яке легато дає portamento синтезатора). */
   windVoice(e, dur) {
-    const s = this.instruments.wind_voice;
-    const x = e.timbre ?? 0;
-    s.oscillator.partials = FLUTE.map((v, i) => lerp(v, CLARINET[i], x));
-    const now = Tone.now();
-    const target = Tone.Frequency(e.notes[0]).toFrequency();
-    if (e.glide_from) {
-      s.triggerAttack(e.glide_from, now, e.vel);
-      s.frequency.exponentialRampToValueAtTime(target, now + 0.3); // ковзання до ноти
-    } else {
-      s.triggerAttack(e.notes[0], now, e.vel);
-    }
-    s.triggerRelease(now + dur);
+    const note = Tone.Frequency(e.notes[0]).transpose(-12).toNote();
+    this.instruments.wind_voice.triggerAttackRelease(note, Math.max(dur, 0.6), Tone.now(), (e.vel ?? 0.3) * 0.9);
   }
 
   tick() {

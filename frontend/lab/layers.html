@@ -92,8 +92,8 @@ const LAYERS = [
     dep: "швидкість танення снігу за ~місяць → 0…6 крапель на такт", tune: "drips.per_bar, drips.melt_range, drips.vel" },
   { key: "wood", ids: ["wood"], kind: "voice", name: "Дерево (осінь)", what: "сухі клацання",
     dep: "осінь × гола земля × без снігу → 0…3 клацання на такт", tune: "wood.per_bar, wood.earth_range, wood.vel" },
-  { key: "wind", ids: ["wind"], kind: "voice", name: "Духовий голос", what: "тихий голос флейта↔кларнет",
-    dep: "напрям змін → мелодія вгору/вниз; NDVI → к-сть нот і висота; зелень → тембр; зима → нижча октава", tune: "wind.vel, wind.phrase_notes, wind.start_degree, wind.note_beats" },
+  { key: "wind", ids: ["wind"], kind: "voice", name: "Тепла флейта (3-й шар)", what: "м'яка флейта октавою нижче, плавне легато",
+    dep: "напрям змін → мелодія вгору/вниз; NDVI → к-сть нот, висота й довжина нот; зима → нижча октава", tune: "wind.vel, wind.phrase_notes, wind.start_degree, wind.note_beats" },
 ];
 const DATA = [["white_frac", "сніг"], ["green_frac", "зелень"], ["earth_frac", "гола земля"], ["ndvi_mean", "NDVI середній"], ["green_up_rate", "напрям змін"]];
 
