@@ -115,7 +115,7 @@ canvas#sky { position:absolute; inset:0; width:100%; height:100%; display:block;
    ====================================================================== */
 
 /* Земля без 3D-моделі: обертається наша карта NDVI від NASA */
-.earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
+.earth-texture { background-image: url("/static/img/earth_ndvi.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
 
 /* Відео малюється на canvas лише в межах регіону; сам <video> прихований */
 /* Відео показує сам браузер; #view — «вікно» розміром із регіон, розміри й зсув задає layoutVideo() у main.js */
@@ -214,7 +214,7 @@ html:has(.game-page) { scroll-snap-type: y mandatory; }
 .snap-point { position: absolute; left: 0; width: 1px; height: 100svh; scroll-snap-align: start; pointer-events: none; }
 .snap-top { top: 0; }
 .snap-game { top: 100svh; }
-.earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
+.earth-texture { background-image: url("/static/img/earth_ndvi.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
 /* Хітбокс нейрона — точно по центру нейрона (без left/top flex-контейнер ширини 0 центрував його ще й сам → зсув на 32px ліворуч) */
 .node-hitbox { left: 0; top: 0; }
 
