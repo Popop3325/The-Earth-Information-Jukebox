@@ -118,8 +118,10 @@ canvas#sky { position:absolute; inset:0; width:100%; height:100%; display:block;
 .earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
 
 /* Відео малюється на canvas лише в межах регіону; сам <video> прихований */
-#screen video#video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: filter .8s ease; }
+/* Відео показує сам браузер; #view — «вікно» розміром із регіон, розміри й зсув задає layoutVideo() у main.js */
+#view { position: absolute; overflow: hidden; transition: filter .8s ease; }
+#screen #view video#video { position: absolute; left: 0; top: 0; max-width: none; max-height: none; object-fit: fill;
+  transform-origin: 0 0; pointer-events: none; filter: none; }
 #view.locked { filter: blur(16px) brightness(.4); }
 
 /* ---------- Хедер: усі елементи керування однієї висоти, на одній лінії ---------- */
@@ -213,3 +215,5 @@ html:has(.game-page) { scroll-snap-type: y mandatory; }
 .snap-top { top: 0; }
 .snap-game { top: 100svh; }
 .earth-texture { background-image: url("/static/img/world.jpg"); background-size: 200% 100%; background-color: #0b5a85; }
+/* Хітбокс нейрона — точно по центру нейрона (без left/top flex-контейнер ширини 0 центрував його ще й сам → зсув на 32px ліворуч) */
+.node-hitbox { left: 0; top: 0; }

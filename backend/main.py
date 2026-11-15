@@ -128,12 +128,21 @@ def get_quiz(video_id: str) -> dict:
 
 # Локальні відео (data/raw/<id>.mp4|.webm) для плеєра: /media/<local_video>
 app.mount("/media", StaticFiles(directory=RAW_DIR, check_dir=False), name="media")
-app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
+class FreshStatic(StaticFiles):
+    """Фронтенд без кешу: браузер щоразу перевіряє файл (ETag → 304, якщо не змінився).
+    Інакше після правок JS/CSS браузер довго віддає стару версію з кешу."""
+    async def get_response(self, path, scope):
+        resp = await super().get_response(path, scope)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+
+app.mount("/static", FreshStatic(directory=FRONTEND), name="static")
 
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(FRONTEND / "index.html")
+    return FileResponse(FRONTEND / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/game")

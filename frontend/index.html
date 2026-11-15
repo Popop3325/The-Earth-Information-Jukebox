@@ -36,8 +36,9 @@
 
         <main>
           <section id="screen" aria-label="NASA satellite view of vegetation (NDVI)">
-            <video id="video" muted playsinline preload="auto"></video>
-            <canvas id="view" class="locked" role="img" aria-label="NASA video of the chosen region"></canvas>
+            <div id="view" class="locked" role="img" aria-label="NASA video of the chosen region">
+              <video id="video" muted playsinline preload="auto"></video>
+            </div>
             <div id="screen-overlay">
               <p id="overlay-text">Earth's changes, in sound</p>
               <button id="overlay-btn" class="start-button" type="button" style="display:none;"></button>

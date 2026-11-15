@@ -10,7 +10,6 @@ import { UI } from "./ui.js";
 const $ = (id) => document.getElementById(id);
 const video = $("video");
 const view = $("view");
-const ctx2d = view.getContext("2d");
 
 // Лише регіони, де грудень і червень чутно різні (у південній півкулі й тропіках питання втрачають сенс)
 const REGIONS = [
@@ -75,20 +74,26 @@ async function getJSON(url) {
   return r.json();
 }
 
-// ======================= Відео на canvas: регіон, вписаний у екран =======================
-function drawFrame() {
-  const r = view.getBoundingClientRect();
-  const dpr = Math.min(devicePixelRatio || 1, 1.5);
-  const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
-  if (view.width !== W || view.height !== H) { view.width = W; view.height = H; }
-  if (video.readyState < 2) return;
-  const [sx, sy, sw, sh] = crop || [0, 0, video.videoWidth, video.videoHeight];
-  const k = Math.min(W / sw, H / sh);                      // вписати весь регіон (contain)
-  const dw = sw * k, dh = sh * k;
-  ctx2d.fillStyle = "#091211";
-  ctx2d.fillRect(0, 0, W, H);
-  ctx2d.drawImage(video, sx, sy, sw, sh, (W - dw) / 2, (H - dh) / 2, dw, dh);
+// ======================= Відео: браузер показує сам <video>, обрізаний CSS-ом до регіону =======================
+// Раніше кожен кадр 4096×2048 копіювався на canvas (drawImage) — це важко: на слабших машинах і в Safari
+// відео «зависало», а звук (свій таймер) грав далі; до того ж canvas грубо масштабував кадр.
+// Тепер: #view — вікно розміром з регіон (вписаний у екран), усередині — повне відео, зсунуте так,
+// щоб у вікні був лише crop. Працює в усіх браузерах, декодування й масштабування — апаратні.
+function layoutVideo() {
+  const scr = $("screen"), box = { width: scr.offsetWidth, height: scr.offsetHeight };   // без CSS-transform «вступу»
+  const VW = video.videoWidth || 4096, VH = video.videoHeight || 2048;
+  const [sx, sy, sw, sh] = crop || [0, 0, VW, VH];
+  const k = Math.min(box.width / sw, box.height / sh);   // вписати весь регіон (contain)
+  Object.assign(view.style, {
+    width: `${sw * k}px`, height: `${sh * k}px`,
+    left: `${(box.width - sw * k) / 2}px`, top: `${(box.height - sh * k) / 2}px`,
+  });
+  Object.assign(video.style, {
+    width: `${VW * k}px`, height: `${VH * k}px`, transform: `translate(${-sx * k}px, ${-sy * k}px)`,
+  });
 }
+video.addEventListener("loadedmetadata", layoutVideo);
+addEventListener("resize", layoutVideo);
 
 function dateAt(t) {
   const tl = features?.timeline;
@@ -99,12 +104,7 @@ function dateAt(t) {
 }
 const fmtDay = (d) => (d ? `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCFullYear()}` : "");
 
-let needDraw = true;
-["seeked", "loadeddata", "play"].forEach((ev) => video.addEventListener(ev, () => (needDraw = true)));
-addEventListener("resize", () => (needDraw = true));
 (function loop() {
-  // перемальовуємо відео лише коли воно грає або змінився кадр (на паузі — нічого не робимо)
-  if (needDraw || !video.paused) { drawFrame(); needDraw = video.readyState < 2; }
   if (features) $("map-tag").textContent = `NASA · NDVI · ${fmtDay(dateAt(video.currentTime))}`;
   requestAnimationFrame(loop);
 })();
@@ -366,6 +366,7 @@ async function loadRegion(id) {
   $("region-select").value = v.id;
   document.title = `${NAMES[v.id] || v.title} · The Earth Information Jukebox`;
   crop = v.crop || null;
+  layoutVideo();
   const src = v.has_local_video ? `/media/${v.local_video}` : v.video_url;
   if (src && !video.src.endsWith(src)) video.src = src;
 
